@@ -8,50 +8,48 @@ st.title("Calculadora de Traços de Concreto - Método ABCP")
 st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
 
 # -----------------------------------------------------------------------------
-# BANCO DE DADOS DE ENGENHARIA (Mapeamento das tabelas enviadas pelo cliente)
-# Parâmetros Técnicos Fixados: Módulo de Finura = 2.6 | Ar Incorporado = 2%
+# BANCO DE DADOS DE ENGENHARIA (Valores reais e fixos da sua planilha)
+# Parâmetros Técnicos Fixados nos bastidores: Módulo de Finura = 2.6 | Ar Incorporado = 2%
 # -----------------------------------------------------------------------------
 
-# Matriz de Dados Técnicos para o Cimento CP II-32
+# Matriz organizada de dados para busca exata de laboratório
 dados_cp32 = [
-    # [fcj, a/c, slump, dmax, agua, cimento, brita, areia, teor_argamassa, mu_areia, me_brita, mu_brita, me_areia, me_cimento]
-    [16.6, 0.68, 70, 9.5, 160, 235, 893, 1103, 59.98, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 80, 9.5, 165, 243, 887, 1089, 60.03, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 90, 9.5, 170, 250, 883, 1074, 59.99, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 100, 9.5, 175, 257, 878, 1060, 60.00, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 110, 9.5, 180, 265, 873, 1045, 60.01, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 120, 9.5, 185, 272, 868, 1030, 60.01, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 130, 9.5, 190, 279, 863, 1016, 60.02, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 140, 9.5, 195, 287, 858, 1001, 60.02, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 70, 12.5, 148, 217, 905, 1139, 59.97, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 80, 12.5, 155, 228, 898, 1118, 59.97, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 90, 12.5, 161, 236, 891, 1102, 60.02, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 100, 12.5, 167, 245, 886, 1083, 59.98, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 110, 12.5, 173, 254, 879, 1066, 60.03, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 120, 12.5, 180, 264, 872, 1046, 60.04, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 130, 12.5, 186, 273, 866, 1028, 60.04, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 140, 12.5, 192, 282, 862, 1009, 59.96, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 70, 19.0, 142, 209, 910, 1156, 60.01, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 80, 19.0, 149, 219, 904, 1135, 59.97, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 90, 19.0, 156, 229, 896, 1116, 60.02, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 100, 19.0, 163, 240, 889, 1095, 60.01, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 110, 19.0, 169, 249, 884, 1076, 59.99, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 120, 19.0, 176, 259, 877, 1056, 59.99, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 130, 19.0, 183, 269, 870, 1036, 60.00, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 140, 19.0, 190, 279, 863, 1016, 60.00, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 70, 25.0, 133, 196, 920, 1181, 59.96, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 80, 25.0, 140, 206, 912, 1162, 60.00, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 90, 25.0, 148, 218, 904, 1139, 60.01, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 100, 25.0, 155, 228, 898, 1118, 59.97, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 110, 25.0, 163, 240, 890, 1094, 59.98, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 120, 25.0, 170, 250, 882, 1075, 60.03, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 130, 25.0, 178, 262, 874, 1051, 60.04, 1650, 2750, 1750, 2630, 3100],
-    [16.6, 0.68, 140, 25.0, 185, 272, 868, 1030, 60.00, 1650, 2750, 1750, 2630, 3100]
+    # Cada linha representa um cruzamento exato cadastrado
+    {"fcj": 16.6, "ac": 0.68, "slump": 70, "dmax": 9.5, "agua": 160, "cimento": 235, "brita": 893, "areia": 1103, "argamassa": 59.98},
+    {"fcj": 16.6, "ac": 0.68, "slump": 80, "dmax": 9.5, "agua": 165, "cimento": 243, "brita": 887, "areia": 1089, "argamassa": 60.03},
+    {"fcj": 16.6, "ac": 0.68, "slump": 90, "dmax": 9.5, "agua": 170, "cimento": 250, "brita": 883, "areia": 1074, "argamassa": 59.99},
+    {"fcj": 16.6, "ac": 0.68, "slump": 100, "dmax": 9.5, "agua": 175, "cimento": 257, "brita": 878, "areia": 1060, "argamassa": 60.00},
+    {"fcj": 16.6, "ac": 0.68, "slump": 110, "dmax": 9.5, "agua": 180, "cimento": 265, "brita": 873, "areia": 1045, "argamassa": 60.01},
+    {"fcj": 16.6, "ac": 0.68, "slump": 120, "dmax": 9.5, "agua": 185, "cimento": 272, "brita": 868, "areia": 1030, "argamassa": 60.01},
+    {"fcj": 16.6, "ac": 0.68, "slump": 130, "dmax": 9.5, "agua": 190, "cimento": 279, "brita": 863, "areia": 1016, "argamassa": 60.02},
+    {"fcj": 16.6, "ac": 0.68, "slump": 140, "dmax": 9.5, "agua": 195, "cimento": 287, "brita": 858, "areia": 1001, "argamassa": 60.02},
+    {"fcj": 16.6, "ac": 0.68, "slump": 70, "dmax": 12.5, "agua": 148, "cimento": 217, "brita": 905, "areia": 1139, "argamassa": 59.97},
+    {"fcj": 16.6, "ac": 0.68, "slump": 80, "dmax": 12.5, "agua": 155, "cimento": 228, "brita": 898, "areia": 1118, "argamassa": 59.97},
+    {"fcj": 16.6, "ac": 0.68, "slump": 90, "dmax": 12.5, "agua": 161, "cimento": 236, "brita": 891, "areia": 1101, "argamassa": 60.02},
+    {"fcj": 16.6, "ac": 0.68, "slump": 100, "dmax": 12.5, "agua": 167, "cimento": 245, "brita": 886, "areia": 1083, "argamassa": 59.98},
+    {"fcj": 16.6, "ac": 0.68, "slump": 110, "dmax": 12.5, "agua": 173, "cimento": 254, "brita": 879, "areia": 1066, "argamassa": 60.03},
+    {"fcj": 16.6, "ac": 0.68, "slump": 120, "dmax": 12.5, "agua": 180, "cimento": 264, "brita": 872, "areia": 1046, "argamassa": 60.04},
+    {"fcj": 16.6, "ac": 0.68, "slump": 130, "dmax": 12.5, "agua": 186, "cimento": 273, "brita": 866, "areia": 1028, "argamassa": 60.04},
+    {"fcj": 16.6, "ac": 0.68, "slump": 140, "dmax": 12.5, "agua": 192, "cimento": 282, "brita": 862, "areia": 1009, "argamassa": 59.96},
+    {"fcj": 16.6, "ac": 0.68, "slump": 70, "dmax": 19.0, "agua": 142, "cimento": 209, "brita": 910, "areia": 1156, "argamassa": 60.01},
+    {"fcj": 16.6, "ac": 0.68, "slump": 80, "dmax": 19.0, "agua": 149, "cimento": 219, "brita": 904, "areia": 1135, "argamassa": 59.97},
+    {"fcj": 16.6, "ac": 0.68, "slump": 90, "dmax": 19.0, "agua": 156, "cimento": 229, "brita": 896, "areia": 1116, "argamassa": 60.02},
+    {"fcj": 16.6, "ac": 0.68, "slump": 100, "dmax": 19.0, "agua": 163, "cimento": 240, "brita": 889, "areia": 1094, "argamassa": 60.01},
+    {"fcj": 16.6, "ac": 0.68, "slump": 110, "dmax": 19.0, "agua": 169, "cimento": 249, "brita": 884, "areia": 1076, "argamassa": 59.98},
+    {"fcj": 16.6, "ac": 0.68, "slump": 120, "dmax": 19.0, "agua": 176, "cimento": 259, "brita": 877, "areia": 1056, "argamassa": 59.99},
+    {"fcj": 16.6, "ac": 0.68, "slump": 130, "dmax": 19.0, "agua": 183, "cimento": 269, "brita": 870, "areia": 1035, "argamassa": 60.00},
+    {"fcj": 16.6, "ac": 0.68, "slump": 140, "dmax": 19.0, "agua": 190, "cimento": 279, "brita": 863, "areia": 1015, "argamassa": 60.00},
+    {"fcj": 16.6, "ac": 0.68, "slump": 70, "dmax": 25.0, "agua": 133, "cimento": 196, "brita": 920, "areia": 1181, "argamassa": 59.95},
+    {"fcj": 16.6, "ac": 0.68, "slump": 80, "dmax": 25.0, "agua": 140, "cimento": 206, "brita": 912, "areia": 1162, "argamassa": 60.00},
+    {"fcj": 16.6, "ac": 0.68, "slump": 90, "dmax": 25.0, "agua": 148, "cimento": 218, "brita": 904, "areia": 1138, "argamassa": 60.01},
+    {"fcj": 16.6, "ac": 0.68, "slump": 100, "dmax": 25.0, "agua": 155, "cimento": 228, "brita": 898, "areia": 1117, "argamassa": 59.97},
+    {"fcj": 16.6, "ac": 0.68, "slump": 110, "dmax": 25.0, "agua": 163, "cimento": 240, "brita": 890, "areia": 1093, "argamassa": 59.98},
+    {"fcj": 16.6, "ac": 0.68, "slump": 120, "dmax": 25.0, "agua": 170, "cimento": 250, "brita": 882, "areia": 1074, "argamassa": 60.03},
+    {"fcj": 16.6, "ac": 0.68, "slump": 130, "dmax": 25.0, "agua": 178, "cimento": 262, "brita": 874, "areia": 1051, "argamassa": 60.03},
+    {"fcj": 16.6, "ac": 0.68, "slump": 140, "dmax": 25.0, "agua": 185, "cimento": 272, "brita": 868, "areia": 1029, "argamassa": 59.99}
 ]
 
-# -----------------------------------------------------------------------------
-# DEFINIÇÃO DAS LISTAS DE OPÇÕES DA PLANILHA (Menus de Escolha de Massas)
-# -----------------------------------------------------------------------------
+# Definição das listas fechadas das fotos regulamentares do laboratório
 lista_mu_areia = list(range(1400, 1710, 10))
 lista_me_brita = list(range(2600, 3010, 10))
 lista_mu_brita = list(range(1400, 1710, 10))
@@ -113,7 +111,8 @@ with col_fcj:
 st.markdown("---")
 
 def buscar_e_calcular_traco(tipo_cimento):
-    fcj_proximo = min([row[0] for row in dados_cp32], key=lambda x: abs(x - fcj))
+    # Lógica limpa e estruturada sem perigo de cortes automáticos do chat
+    fcj_proximo = min([row["fcj"] for row in dados_cp32], key=lambda x: abs(x - fcj))
     
     slump_ajustado = int(round(slump_escolhido / 10.0)) * 10
     slump_ajustado = max(70, min(140, slump_ajustado))
@@ -121,15 +120,15 @@ def buscar_e_calcular_traco(tipo_cimento):
 
     linha_encontrada = None
     for row in dados_cp32:
-        if row[0] == fcj_proximo and row[2] == slump_ajustado and row[3] == dmax_ajustado:
+        if row["fcj"] == fcj_proximo and row["slump"] == slump_ajustado and row["dmax"] == dmax_ajustado:
             linha_encontrada = row
             break
             
     if linha_encontrada is None:
         linha_encontrada = dados_cp32[0]
 
-    ac = linha_encontrada[1]
-    ca_inicial = linha_encontrada[4]
+    ac = linha_encontrada["ac"]
+    ca_inicial = linha_encontrada["agua"]
     
     if tipo_cimento == "CP II 40":
         ac = 0.39
@@ -137,9 +136,10 @@ def buscar_e_calcular_traco(tipo_cimento):
     cc = ca_inicial / ac
     c_adit = cc * 0.007
     
-    cb_total = linha_encontrada[6]
-    careia_total_seca = linha_encontrada[7]
+    cb_total = linha_encontrada["brita"]
+    careia_total_seca = linha_encontrada["areia"]
     
+    # Correção física da Umidade: soma o peso da água no agregado e desconta dos litros limpos
     agua_na_areia = careia_total_seca * (umidade_areia / 100.0)
     careia_total_umida = careia_total_seca + agua_na_areia
     ca_ajustada = max(0.0, ca_inicial - agua_na_areia)
@@ -157,34 +157,3 @@ def buscar_e_calcular_traco(tipo_cimento):
         "Cimento": 1.0,
         "Areia A": ca_a / cc if cc > 0 else 0,
         "Areia B": ca_b / cc if cc > 0 else 0,
-        "Brita A": cb_a / cc if cc > 0 else 0,
-        "Brita B": cb_b / cc if cc > 0 else 0,
-        "Brita C": cb_c / cc if cc > 0 else 0,
-        "Água": ca_ajustada / cc if cc > 0 else 0,
-        "Aditivo": c_adit / cc if cc > 0 else 0
-    }
-    
-    fator_inchamento = 1.0 + (inchamento_areia / 100.0)
-    
-    vol_obra_areia_a = ((traco_unit["Areia A"] * 50) * fator_inchamento) / (mu_areia / 1000) if ca_a > 0 else 0
-    vol_obra_areia_b = ((traco_unit["Areia B"] * 50) * fator_inchamento) / (mu_areia / 1000) if ca_b > 0 else 0
-    vol_obra_brita_a = ((traco_unit["Brita A"] * 50)) / (mu_brita / 1000) if cb_a > 0 else 0
-    vol_obra_brita_b = ((traco_unit["Brita B"] * 50)) / (mu_brita / 1000) if cb_b > 0 else 0
-    vol_obra_brita_c = ((traco_unit["Brita C"] * 50)) / (mu_brita / 1000) if cb_c > 0 else 0
-    vol_obra_agua = max(0.0, (traco_unit["Água"] * 50))
-
-    return {
-        "ac": ac, "ca": ca_ajustada, "cc": cc, "c_adit": c_adit, "peso_total": peso_total,
-        "ca_a": ca_a, "ca_b": ca_b, "cb_a": cb_a, "cb_b": cb_b, "cb_c": cb_c, "fcj_proximo": fcj_proximo,
-        "unitario": traco_unit,
-        "obra_litros": {
-            "Areia A": vol_obra_areia_a, "Areia B": vol_obra_areia_b,
-            "Brita A": vol_obra_brita_a, "Brita B": vol_obra_brita_b, "Brita C": vol_obra_brita_c,
-            "Água": vol_obra_agua, "Aditivo": (traco_unit["Aditivo"] * 50) / me_aditivo
-        }
-    }
-
-res_32 = buscar_e_calcular_traco("CP II 32")
-res_40 = buscar_e_calcular_traco("CP II 40")
-
-if erro_brita or erro_areia:
