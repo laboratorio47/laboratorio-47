@@ -107,6 +107,7 @@ with col_fcj:
 st.markdown("---")
 
 def buscar_e_calcular_traco(tipo_cimento):
+    # Procura o fcj mais próximo dentro do banco de dados fornecido
     fcj_proximo = min([row[0] for row in dados_cp32], key=lambda x: abs(x - fcj))
     slump_ajustado = int(round(slump_escolhido / 10.0)) * 10
     slump_ajustado = max(70, min(140, slump_ajustado))
@@ -121,7 +122,7 @@ def buscar_e_calcular_traco(tipo_cimento):
     if linha_encontrada is None:
         linha_encontrada = dados_cp32[0]
 
-    # Busca dinâmica ou do seletor conforme pedido
+    # Busca dinâmica da tabela nova mapeada
     ac = linha_encontrada[1]
     ca_inicial = linha_encontrada[4]
     
@@ -133,7 +134,7 @@ def buscar_e_calcular_traco(tipo_cimento):
     
     cb_total = linha_encontrada[6]
     careia_total_seca = linha_encontrada[7]
-    teor_argamassa_tabela = linha_encontrada[8]
+    teor_argamassa_tabela = linha_encontrada[9]
     
     agua_na_areia = careia_total_seca * (umidade_areia / 100.0)
     careia_total_umida = careia_total_seca + agua_na_areia
@@ -161,8 +162,8 @@ def buscar_e_calcular_traco(tipo_cimento):
     
     fator_inchamento = 1.0 + (inchamento_areia / 100.0)
     
-    vol_obra_areia_a = ((traco_unit["Areia A"] * 50) * Fator_inchamento) / (mu_areia_sel / 1000) if ca_a > 0 else 0
-    vol_obra_areia_b = ((traco_unit["Areia B"] * 50) * Fator_inchamento) / (mu_areia_sel / 1000) if ca_b > 0 else 0
+    vol_obra_areia_a = ((traco_unit["Areia A"] * 50) * fator_inchamento) / (mu_areia_sel / 1000) if ca_a > 0 else 0
+    vol_obra_areia_b = ((traco_unit["Areia B"] * 50) * fator_inchamento) / (mu_areia_sel / 1000) if ca_b > 0 else 0
     vol_obra_brita_a = ((traco_unit["Brita A"] * 50)) / (mu_brita_sel / 1000) if cb_a > 0 else 0
     vol_obra_brita_b = ((traco_unit["Brita B"] * 50)) / (mu_brita_sel / 1000) if cb_b > 0 else 0
     vol_obra_brita_c = ((traco_unit["Brita C"] * 50)) / (mu_brita_sel / 1000) if cb_c > 0 else 0
@@ -179,6 +180,9 @@ def buscar_e_calcular_traco(tipo_cimento):
             "Água": vol_obra_agua, "Aditivo": (traco_unit["Aditivo"] * 50) / me_aditivo_sel
         }
     }
+
+
+
 
 res_32 = buscar_e_calcular_traco("CP II 32")
 res_40 = buscar_e_calcular_traco("CP II 40")
