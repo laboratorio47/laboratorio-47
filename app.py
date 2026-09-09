@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Força o layout em tela cheia para caber as tabelas lado a lado de forma clara
+# Força o layout em tela cheia para caber as tabelas de forma clara
 st.set_page_config(page_title="Calculadora ABCP Pro", layout="wide")
 
 st.title("Calculadora de Traços de Concreto - Método ABCP")
@@ -60,16 +60,10 @@ inchamento_areia = st.sidebar.number_input("Inchamento da Areia (%)", value=0.0,
 # -----------------------------------------------------------------------------
 # PAINEL CENTRAL DE RESULTADOS
 # -----------------------------------------------------------------------------
-col_fck, col_fcj = st.columns(2)
-with col_fck:
-    st.metric(label="fck Selecionado", value=f"{fck:.1f} MPa")
-with col_fcj:
-    st.metric(label="fcj 28 Dias Calculado", value=f"{fcj:.1f} MPa", delta="sd = 4.0")
-
+st.subheader(f"Parâmetros: fck Desejado {fck:.1f} MPa | fcj Calculado {fcj:.1f} MPa")
 st.markdown("---")
 
 def calcular_dosagem_abcp(tipo_cimento):
-    # Lógica Matemática Padrão ABCP Baseada no fcj Informado
     if tipo_cimento == "CP II 32":
         ac = max(0.20, min(0.80, 0.68 - ((fcj - 16.6) * 0.01)))
         ca_inicial = 163.0 if dmax_escolhido == 19.0 else 148.0
@@ -77,11 +71,9 @@ def calcular_dosagem_abcp(tipo_cimento):
         ac = 0.39
         ca_inicial = 165.0 if dmax_escolhido == 19.0 else 157.0
 
-    # Aplicação estrita das fórmulas fornecidas pelo cliente
     cc = ca_inicial / ac
     c_adit = cc * 0.007
     
-    # Cubagem de agregados baseada no Módulo de Finura Fixo de 2.6
     vb = 0.69 if dmax_escolhido == 19.0 else 0.64
     cb_total = vb * mu_brita
     
@@ -89,7 +81,7 @@ def calcular_dosagem_abcp(tipo_cimento):
     vol_agua_inicial = ca_inicial / 1000.0
     vol_brita = cb_total / me_brita
     vol_adit = c_adit / me_aditivo
-    vol_ar = 0.02 # 2% Fixo
+    vol_ar = 0.02
     
     vol_areia_total_seca = 1.0 - (vol_cimento + vol_agua_inicial + vol_brita + vol_adit + vol_ar)
     if vol_areia_total_seca < 0:
@@ -97,12 +89,10 @@ def calcular_dosagem_abcp(tipo_cimento):
         
     careia_total_seca = vol_areia_total_seca * me_areia
     
-    # Ajuste de Umidade na Massa da Areia e Desconto na Água Efetiva
     agua_na_areia = careia_total_seca * (umidade_areia / 100.0)
     careia_total_umida = careia_total_seca + agua_na_areia
     ca_ajustada = max(0.0, ca_inicial - agua_na_areia)
     
-    # Separação Proporcional das Porcentagens Escolhidas
     cb_a = cb_total * (p_brita_a / 100.0)
     cb_b = cb_total * (p_brita_b / 100.0)
     cb_c = cb_total * (p_brita_c / 100.0)
@@ -123,7 +113,6 @@ def calcular_dosagem_abcp(tipo_cimento):
         "Aditivo": c_adit / cc if cc > 0 else 0
     }
     
-    # Traço em Volume para Canteiro de Obra (Saco de 50kg) com Inchamento
     fator_inchamento = 1.0 + (inchamento_areia / 100.0)
     vol_obra_areia_a = ((traco_unit["Areia A"] * 50) * fator_inchamento) / (mu_areia / 1000) if ca_a > 0 else 0
     vol_obra_areia_b = ((traco_unit["Areia B"] * 50) * fator_inchamento) / (mu_areia / 1000) if ca_b > 0 else 0
@@ -155,19 +144,9 @@ else:
     with col_m32:
         st.subheader("Cimento CP II-32")
         st.caption(f"Relação a/c Calculada: {res_32['ac']:.2f} | Água Efetiva: {res_32['ca']:.0f} L")
-        
-        massa_cc = int(round(res_32['cc']))
-        massa_caa = int(round(res_32['ca_a']))
-        massa_cab = int(round(res_32['ca_b']))
-        massa_cba = int(round(res_32['cb_a']))
-        massa_cbb = int(round(res_32['cb_b']))
-        massa_cbc = int(round(res_32['cb_c']))
-        massa_ca = int(round(res_32['ca']))
-        massa_cadit = int(round(res_32['c_adit']))
-        
         df_32_massa = pd.DataFrame({
             "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
-            "Massa Corrigida (kg)": [massa_cc, massa_caa, massa_cab, massa_cba, massa_cbb, massa_cbc, massa_ca, massa_cadit],
+            "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), int(round(res_32['c_adit']))],
             "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"]
         })
         st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
@@ -176,19 +155,9 @@ else:
     with col_m40:
         st.subheader("Cimento CP II-40")
         st.caption(f"Relação a/c Calculada: {res_40['ac']:.2f} | Água Efetiva: {res_40['ca']:.0f} L")
-        
-        massa_cc_40 = int(round(res_40['cc']))
-        massa_caa_40 = int(round(res_40['ca_a']))
-        massa_cab_40 = int(round(res_40['ca_b']))
-        massa_cba_40 = int(round(res_40['cb_a']))
-        massa_cbb_40 = int(round(res_40['cb_b']))
-        massa_cbc_40 = int(round(res_40['cb_c']))
-        massa_ca_40 = int(round(res_40['ca']))
-        massa_cadit_40 = int(round(res_40['c_adit']))
-        
         df_40_massa = pd.DataFrame({
             "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
-            "Massa Corrigida (kg)": [massa_cc_40, massa_caa_40, massa_cab_40, massa_cba_40, massa_cbb_40, massa_cbc_40, massa_ca_40, massa_cadit_40],
+            "Massa Corrigida (kg)": [int(round(res_40['cc'])), int(round(res_40['ca_a'])), int(round(res_40['ca_b'])), int(round(res_40['cb_a'])), int(round(res_40['cb_b'])), int(round(res_40['cb_c'])), int(round(res_40['ca'])), int(round(res_40['c_adit']))],
             "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"]
         })
         st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
@@ -196,6 +165,16 @@ else:
 
     st.markdown("---")
     st.header("Seção 2: Proporções em Volume Prático (Litros para 1 Saco de 50kg)")
-    col_v32, col_v40 = st.columns(2)
     
-    with col_v32:
+    st.subheader("Volume com Cimento CP II-32")
+    df_32_vol = pd.DataFrame({
+        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+        "Volume Necessário": [f"{res_32['obra_litros']['Areia A']:.1f}", f"{res_32['obra_litros']['Areia B']:.1f}", f"{res_32['obra_litros']['Brita A']:.1f}", f"{res_32['obra_litros']['Brita B']:.1f}", f"{res_32['obra_litros']['Brita C']:.1f}", f"{res_32['obra_litros']['Água']:.1f}", f"{res_32['obra_litros']['Aditivo']:.3f}"]
+    })
+    st.dataframe(df_32_vol, use_container_width=True, hide_index=True)
+    
+    st.subheader("Volume com Cimento CP II-40")
+    df_40_vol = pd.DataFrame({
+        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+        "Volume Necessário": [f"{res_40['obra_litros']['Areia A']:.1f}", f"{res_40['obra_litros']['Areia B']:.1f}", f"{res_40['obra_litros']['Brita A']:.1f}", f"{res_40['obra_litros']['Brita B']:.1f}", f"{res_40['obra_litros']['Brita C']:.1f}", f"{res_40['obra_litros']['Água']:.1f}", f"{res_40['obra_litros']['Aditivo']:.3f}"]
+    })
