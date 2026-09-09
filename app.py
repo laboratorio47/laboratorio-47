@@ -56,7 +56,6 @@ lista_mu_areia = list(range(1400, 1710, 10))
 lista_me_brita = list(range(2600, 3010, 10))
 lista_mu_brita = list(range(1400, 1710, 10))
 lista_me_areia = list(range(2450, 2760, 10))
-# CORRIGIDO DEFINITIVAMENTE: Lista preenchida e fechada corretamente
 lista_me_cimento = list(range(2900, 3210, 10))
 lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]
 
