@@ -197,3 +197,50 @@ else:
         st.caption(f"Relação a/c Calculada: {res_40['ac']:.2f} | Água Efetiva: {res_40['ca']:.0f} L")
         
         massa_dados_40 = [
+            [int(round(res_40['cc'])), f"1.00"],
+            [int(round(res_40['ca_a'])), f"{res_40['unitario']['Areia A']:.2f}"],
+            [int(round(res_40['ca_b'])), f"{res_40['unitario']['Areia B']:.2f}"],
+            [int(round(res_40['cb_a'])), f"{res_40['unitario']['Brita A']:.2f}"],
+            [int(round(res_40['cb_b'])), f"{res_40['unitario']['Brita B']:.2f}"],
+            [int(round(res_40['cb_c'])), f"{res_40['unitario']['Brita C']:.2f}"],
+            [int(round(res_40['ca'])), f"{res_40['unitario']['Água']:.2f}"],
+            [int(round(res_40['c_adit'])), f"{res_40['unitario']['Aditivo']:.3f}"]
+        ]
+        df_40_massa = pd.DataFrame(massa_dados_40, columns=["Massa Corrigida (kg)", "Traço Unitário"], index=["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"])
+        st.dataframe(df_40_massa, use_container_width=True)
+        st.metric("Massa Total Adensada (40)", f"{int(round(res_40['peso_total']))} kg/m³")
+        st.metric("Teor de Argamassa Real (40)", f"{teor_argamassa_escolhido}%")
+    
+    st.markdown("---")
+    st.header("Seção 2: Traço de Obra em Volumes (50 litros)")
+    col_o32, col_o40 = st.columns(2)
+    
+    with col_o32:
+        st.subheader("Cimento CP II-32 - Volumes para 50L")
+        obra_dados_32 = [
+            [50, "Cimento (kg)"],
+            [res_32['obra_litros']['Areia A'], "Areia A (L)"],
+            [res_32['obra_litros']['Areia B'], "Areia B (L)"],
+            [res_32['obra_litros']['Brita A'], "Brita A (L)"],
+            [res_32['obra_litros']['Brita B'], "Brita B (L)"],
+            [res_32['obra_litros']['Brita C'], "Brita C (L)"],
+            [res_32['obra_litros']['Água'], "Água (L)"],
+            [res_32['obra_litros']['Aditivo'], "Aditivo (L)"]
+        ]
+        df_o32 = pd.DataFrame(obra_dados_32, columns=["Quantidade", "Material"])
+        st.dataframe(df_o32, use_container_width=True)
+    
+    with col_o40:
+        st.subheader("Cimento CP II-40 - Volumes para 50L")
+        obra_dados_40 = [
+            [50, "Cimento (kg)"],
+            [res_40['obra_litros']['Areia A'], "Areia A (L)"],
+            [res_40['obra_litros']['Areia B'], "Areia B (L)"],
+            [res_40['obra_litros']['Brita A'], "Brita A (L)"],
+            [res_40['obra_litros']['Brita B'], "Brita B (L)"],
+            [res_40['obra_litros']['Brita C'], "Brita C (L)"],
+            [res_40['obra_litros']['Água'], "Água (L)"],
+            [res_40['obra_litros']['Aditivo'], "Aditivo (L)"]
+        ]
+        df_o40 = pd.DataFrame(obra_dados_40, columns=["Quantidade", "Material"])
+        st.dataframe(df_o40, use_container_width=True)
