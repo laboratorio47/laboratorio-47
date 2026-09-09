@@ -7,14 +7,8 @@ st.set_page_config(page_title="Calculadora ABCP Pro", layout="wide")
 st.title("Calculadora de Traços de Concreto - Método ABCP")
 st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
 
-# -----------------------------------------------------------------------------
-# BANCO DE DADOS DE ENGENHARIA (Mapeamento das tabelas enviadas pelo cliente)
-# Parâmetros Técnicos Fixados: Módulo de Finura = 2.6 | Ar Incorporado = 2%
-# -----------------------------------------------------------------------------
-
-# Matriz de Dados Técnicos para o Cimento CP II-32
+# Matriz de Dados Técnicos para o Cimento CP II-32 (Fixado: MF = 2.6 | Ar = 2%)
 dados_cp32 = [
-    # [fcj, a/c, slump, dmax, agua, cimento, brita, areia, teor_argamassa, mu_areia, me_brita, mu_brita, me_areia, me_cimento]
     [16.6, 0.68, 70, 9.5, 160, 235, 893, 1103, 59.98, 1650, 2750, 1750, 2630, 3100],
     [16.6, 0.68, 80, 9.5, 165, 243, 887, 1089, 60.03, 1650, 2750, 1750, 2630, 3100],
     [16.6, 0.68, 90, 9.5, 170, 250, 883, 1074, 59.99, 1650, 2750, 1750, 2630, 3100],
@@ -49,9 +43,6 @@ dados_cp32 = [
     [16.6, 0.68, 140, 25.0, 185, 272, 868, 1030, 60.00, 1650, 2750, 1750, 2630, 3100]
 ]
 
-# -----------------------------------------------------------------------------
-# DEFINIÇÃO DAS LISTAS DE OPÇÕES DA PLANILHA (Menus de Escolha de Massas)
-# -----------------------------------------------------------------------------
 lista_mu_areia = list(range(1400, 1710, 10))
 lista_me_brita = list(range(2600, 3010, 10))
 lista_mu_brita = list(range(1400, 1710, 10))
@@ -59,9 +50,6 @@ lista_me_areia = list(range(2450, 2760, 10))
 lista_me_cimento = list(range(2900, 3210, 10))
 lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]
 
-# -----------------------------------------------------------------------------
-# CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
-# -----------------------------------------------------------------------------
 st.sidebar.header("📥 Parâmetros Gerais")
 fck = st.sidebar.number_input("fck Desejado (MPa)", min_value=10.0, max_value=50.0, value=40.0, step=5.0)
 sd = 4.0
@@ -101,9 +89,6 @@ st.sidebar.subheader("🪣 Parâmetros de Obra")
 umidade_areia = st.sidebar.number_input("Umidade da Areia (%)", value=0.0, step=0.5)
 inchamento_areia = st.sidebar.number_input("Inchamento da Areia (%)", value=0.0, step=0.5)
 
-# -----------------------------------------------------------------------------
-# PAINEL CENTRAL DE RESULTADOS
-# -----------------------------------------------------------------------------
 col_fck, col_fcj = st.columns(2)
 with col_fck:
     st.metric(label="fck Selecionado", value=f"{fck:.1f} MPa")
@@ -187,3 +172,14 @@ res_32 = buscar_e_calcular_traco("CP II 32")
 res_40 = buscar_e_calcular_traco("CP II 40")
 
 if erro_brita or erro_areia:
+    st.error("🚨 Ajuste a barra lateral: As somas de britas e areias precisam dar exatamente 100% para destravar as tabelas.")
+else:
+    st.header("Seção 1: Traço dos Materiais em Massa (kg/m³)")
+    col_m32, col_m40 = st.columns(2)
+    
+    with col_m32:
+        st.subheader("Cimento CP II-32")
+        st.caption(f"fcj Selecionado: {res_32['fcj_proximo']:.1f} MPa | Relação a/c Tabela: {res_32['ac']:.2f}")
+        df_32_massa = pd.DataFrame({
+            "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
+            "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), int(round(res_32['c_adit']))],
