@@ -1,48 +1,88 @@
 import streamlit as st
 import pandas as pd
+import os
 
-# Força o layout em tela cheia para caber as tabelas comparativas lado a lado
+# -----------------------------------------------------------------------------
+# CONFIGURAÇÃO DA PÁGINA
+# -----------------------------------------------------------------------------
 st.set_page_config(page_title="Calculadora ABCP Pro", layout="wide")
 
-st.title("Calculadora de Traços de Concreto - Método ABCP")
-st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
+col_logo, col_titulo = st.columns([1, 5])
+with col_logo:
+    if os.path.exists("logo.jpeg"):
+        st.image("logo.jpeg", width=140)
+with col_titulo:
+    st.title("Calculadora de Traços de Concreto - Método ABCP")
+    st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
 
 # -----------------------------------------------------------------------------
-# CONTROLES DA BARRA LATERAL (ENTRADAS REGULAMENTARES DO USUÁRIO)
+# CARREGAMENTO DOS DADOS (arquivos gerados a partir de "tabelas completas.xlsx")
+# -----------------------------------------------------------------------------
+@st.cache_data
+def carregar_dados():
+    tracos = pd.read_csv("dados_tracos.csv")
+    massas = pd.read_csv("massas.csv")
+    umidade_inchamento = pd.read_csv("umidade_inchamento.csv")
+    sacos = pd.read_csv("sacos_cimento.csv")
+    return tracos, massas, umidade_inchamento, sacos
+
+df_tracos, df_massas, df_umid, df_sacos = carregar_dados()
+
+lista_mu_areia = df_massas["mu_areia"].dropna().tolist()
+lista_me_brita = df_massas["me_brita"].dropna().tolist()
+lista_mu_brita = df_massas["mu_brita"].dropna().tolist()
+lista_me_areia = df_massas["me_areia"].dropna().tolist()
+lista_me_cimento = df_massas["me_cimento"].dropna().tolist()
+lista_umidade = df_umid["umidade"].dropna().tolist()
+lista_inchamento = df_umid["inchamento"].dropna().tolist()
+lista_sacos = df_sacos["sacos"].dropna().astype(int).tolist()
+lista_dmax = sorted(df_tracos["dmax"].unique().tolist())
+
+lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]  # sem tabela própria enviada
+
+def indice_mais_proximo(lista, valor):
+    return min(range(len(lista)), key=lambda i: abs(lista[i] - valor))
+
+FCK_MIN = float(round(df_tracos["fck"].min()))
+FCK_MAX = float(round(df_tracos["fck"].max()))
+
+# -----------------------------------------------------------------------------
+# CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
 # -----------------------------------------------------------------------------
 st.sidebar.header("📥 Parâmetros Gerais")
-
-# CORREÇÃO 1: fck agora limitado no máximo em 40.0 MPa (mínimo 10.0 e máximo 40.0)
-fck = st.sidebar.number_input("fck Desejado (MPa)", min_value=10.0, max_value=40.0, value=40.0, step=5.0)
+fck = st.sidebar.number_input(
+    "fck Desejado (MPa)", min_value=FCK_MIN, max_value=FCK_MAX, value=FCK_MIN + 10.0, step=5.0
+)
 sd = 4.0
 fcj = fck + 1.65 * sd
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("💧 Consumo de Água (Slump)")
-# CORREÇÃO 5: Slump limitado rigidamente nas opções que funcionam
-slump_escolhido = st.sidebar.selectbox("Abatimento / Slump (mm)", options=[70, 80, 90, 100, 110, 120, 130, 140], index=3)
-dmax_escolhido = st.sidebar.selectbox("Diâmetro Máximo Brita Dmáx (mm)", options=[9.5, 12.5, 19.0, 25.0], index=2)
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("🎯 Seleção do Teor de Argamassa")
-# CORREÇÃO 4: Taxa de argamassa limitada estritamente entre 45% e 60%
-teor_argamassa_escolhido = st.sidebar.slider("Teor de Argamassa desejado (%)", min_value=45, max_value=60, value=53, step=1)
-
-# Listas de opções oficiais de laboratório para as propriedades físicas
-lista_mu_areia = list(range(1400, 1710, 10))
-lista_me_brita = list(range(2600, 3010, 10))
-lista_mu_brita = list(range(1400, 1710, 10))
-lista_me_areia = list(range(2450, 2760, 10))
-lista_me_cimento = list(range(2900, 3210, 10))
-lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]
+slump_escolhido = st.sidebar.number_input("Abatimento / Slump (mm)", min_value=70, max_value=140, value=100, step=10)
+dmax_escolhido = st.sidebar.selectbox("Diâmetro Máximo Brita Dmáx (mm)", options=lista_dmax, index=min(2, len(lista_dmax) - 1))
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📐 Propriedades Físicas dos Materiais")
-me_cimento_sel = st.sidebar.selectbox("Massa Específica Cimento (kg/m³)", options=lista_me_cimento, index=20)
-me_areia_sel = st.sidebar.selectbox("Massa Específica Areia (kg/m³)", options=lista_me_areia, index=18)
-me_brita_sel = st.sidebar.selectbox("Massa Específica Brita (kg/m³)", options=lista_me_brita, index=14)
-mu_areia_sel = st.sidebar.selectbox("Massa Unitária Areia (kg/m³)", options=lista_mu_areia, index=6)
-mu_brita_sel = st.sidebar.selectbox("Massa Unitária Brita (kg/m³)", options=lista_mu_brita, index=8)
+me_cimento_sel = st.sidebar.selectbox(
+    "Massa Específica Cimento (kg/m³)", options=lista_me_cimento,
+    index=indice_mais_proximo(lista_me_cimento, 3100)
+)
+me_areia_sel = st.sidebar.selectbox(
+    "Massa Específica Areia (kg/m³)", options=lista_me_areia,
+    index=indice_mais_proximo(lista_me_areia, 2630)
+)
+me_brita_sel = st.sidebar.selectbox(
+    "Massa Específica Brita (kg/m³)", options=lista_me_brita,
+    index=indice_mais_proximo(lista_me_brita, 2750)
+)
+mu_areia_sel = st.sidebar.selectbox(
+    "Massa Unitária Areia (kg/m³)", options=lista_mu_areia,
+    index=indice_mais_proximo(lista_mu_areia, 1650)
+)
+mu_brita_sel = st.sidebar.selectbox(
+    "Massa Unitária Brita (kg/m³)", options=lista_mu_brita,
+    index=indice_mais_proximo(lista_mu_brita, 1700)
+)
 me_aditivo_sel = st.sidebar.selectbox("Massa Específica Aditivo (kg/m³)", options=lista_me_aditivo, index=20)
 
 st.sidebar.markdown("---")
@@ -58,11 +98,13 @@ erro_areia = (p_areia_a + p_areia_b) != 100
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🪣 Parâmetros de Obra")
-# CORREÇÃO 6 e 7: Umidade limitada até 25% e Inchamento limitado até 50%
-umidade_areia = st.sidebar.number_input("Umidade da Areia (%)", min_value=0.0, max_value=25.0, value=0.0, step=0.5)
-inchamento_areia = st.sidebar.number_input("Inchamento da Areia (%)", min_value=0.0, max_value=50.0, value=0.0, step=0.5)
+umidade_areia = st.sidebar.selectbox("Umidade da Areia (%)", options=lista_umidade, index=0)
+inchamento_areia = st.sidebar.selectbox("Inchamento da Areia (%)", options=lista_inchamento, index=0)
+qtd_sacos = st.sidebar.selectbox("Quantidade de Sacos de Cimento (50kg)", options=lista_sacos, index=0)
 
-# Painel Superior Indicativo
+# -----------------------------------------------------------------------------
+# PAINEL CENTRAL DE RESULTADOS
+# -----------------------------------------------------------------------------
 col_fck, col_fcj = st.columns(2)
 with col_fck:
     st.metric(label="fck Selecionado", value=f"{fck:.1f} MPa")
@@ -71,67 +113,50 @@ with col_fcj:
 
 st.markdown("---")
 
-# -----------------------------------------------------------------------------
-# FUNÇÃO DE CÁLCULO DINÂMICO CONFORME A REVISÃO DO CLIENTE
-# -----------------------------------------------------------------------------
-def calcular_dosagem_abcp(tipo_cimento):
-    # CORREÇÃO: CP II-32 consome mais cimento (a/c menor) do que o CP II-40
-    if tipo_cimento == "CP II 32":
-        ac = 0.58 - ((fcj - 16.6) * 0.012)
-        ac = max(0.25, min(0.65, ac))
-        
-        if slump_escolhido <= 70:
-            ca_inicial = 160.0 if dmax_escolhido == 9.5 else (147.8 if dmax_escolhido == 12.5 else 142.0)
-        elif slump_escolhido <= 100:
-            ca_inicial = 175.0 if dmax_escolhido == 9.5 else (166.8 if dmax_escolhido == 12.5 else 163.0)
-        else:
-            ca_inicial = 195.0 if dmax_escolhido == 9.5 else (191.8 if dmax_escolhido == 12.5 else 190.0)
-    else:
-        # CP II-40 com menor consumo (a/c maior)
-        ac = 0.68 - ((fcj - 16.6) * 0.011)
-        ac = max(0.35, min(0.75, ac))
-        
-        if slump_escolhido <= 70:
-            ca_inicial = 172.0 if dmax_escolhido == 9.5 else (158.0 if dmax_escolhido == 12.5 else 151.0)
-        elif slump_escolhido <= 100:
-            ca_inicial = 180.0 if dmax_escolhido == 9.5 else (170.0 if dmax_escolhido == 12.5 else 165.0)
-        else:
-            ca_inicial = 194.0 if dmax_escolhido == 9.5 else (180.0 if dmax_escolhido == 12.5 else 177.0)
 
-    # Consumo de cimento e aditivo encadeado
-    cc = ca_inicial / ac
+def buscar_e_calcular_traco(tipo_cimento):
+    dados_cimento = df_tracos[df_tracos["cimento"] == tipo_cimento]
+
+    # Procura o fcj mais próximo dentro do banco de dados fornecido
+    fcj_proximo = min(dados_cimento["fcj"].unique().tolist(), key=lambda x: abs(x - fcj))
+    slump_ajustado = int(round(slump_escolhido / 10.0)) * 10
+    slump_ajustado = max(70, min(140, slump_ajustado))
+    dmax_ajustado = float(dmax_escolhido)
+
+    linha = dados_cimento[
+        (abs(dados_cimento["fcj"] - fcj_proximo) < 0.1)
+        & (dados_cimento["slump"] == slump_ajustado)
+        & (dados_cimento["dmax"] == dmax_ajustado)
+    ]
+
+    if linha.empty:
+        linha = dados_cimento.iloc[[0]]
+    linha = linha.iloc[0]
+
+    # Dados exatos da tabela cruzada (já corretos por fcj e por tipo de cimento)
+    ac = linha["ac"]
+    cc = linha["consumo_cimento"]
+    ca_inicial = linha["agua"]
     c_adit = cc * 0.007
-    
-    # Coeficiente Vb para Módulo de Finura 2.6 fixo nos bastidores
-    vb = 0.565 if dmax_escolhido == 9.5 else (0.622 if dmax_escolhido == 12.5 else 0.690)
-    cb_total = vb * mu_brita_sel
-    
-    vol_cimento = cc / me_cimento_sel
-    vol_agua_inicial = ca_inicial / 1000.0
-    vol_brita = cb_total / me_brita_sel
-    vol_adit = c_adit / me_aditivo_sel
-    vol_ar = 0.02  # 2% fixo de Ar Incorporado nos bastidores
-    
-    vol_areia_total_seca = 1.0 - (vol_cimento + vol_agua_inicial + vol_brita + vol_adit + vol_ar)
-    if vol_areia_total_seca < 0:
-        vol_areia_total_seca = 0.25
-        
-    careia_total_seca = vol_areia_total_seca * me_areia_sel
-    
-    # Ajuste de Umidade na Areia (Soma na areia, desconta da água limpa)
-    agua_na_areia = careia_total_seca * (umidade_areia / 100.0)
-    careia_total_umida = careia_total_seca + agua_na_areia
+
+    brita_total_seca = linha["consumo_brita"]
+    areia_total_seca = linha["consumo_areia"]
+    teor_argamassa_tabela = int(linha["teor_argamassa"])
+
+    # Ajuste de Umidade na Massa da Areia e Desconto na Água Efetiva
+    agua_na_areia = areia_total_seca * (umidade_areia / 100.0)
+    areia_total_umida = areia_total_seca + agua_na_areia
     ca_ajustada = max(0.0, ca_inicial - agua_na_areia)
-    
-    cb_a = cb_total * (p_brita_a / 100.0)
-    cb_b = cb_total * (p_brita_b / 100.0)
-    cb_c = cb_total * (p_brita_c / 100.0)
-    
-    ca_a = careia_total_umida * (p_areia_a / 100.0)
-    ca_b = careia_total_umida * (p_areia_b / 100.0)
-    
-    peso_total = cc + careia_total_umida + cb_total + ca_ajustada + c_adit
-    
+
+    cb_a = brita_total_seca * (p_brita_a / 100.0)
+    cb_b = brita_total_seca * (p_brita_b / 100.0)
+    cb_c = brita_total_seca * (p_brita_c / 100.0)
+
+    ca_a = areia_total_umida * (p_areia_a / 100.0)
+    ca_b = areia_total_umida * (p_areia_b / 100.0)
+
+    peso_total = cc + areia_total_umida + brita_total_seca + ca_ajustada + c_adit
+
     traco_unit = {
         "Cimento": 1.0,
         "Areia A": ca_a / cc if cc > 0 else 0,
@@ -140,107 +165,79 @@ def calcular_dosagem_abcp(tipo_cimento):
         "Brita B": cb_b / cc if cc > 0 else 0,
         "Brita C": cb_c / cc if cc > 0 else 0,
         "Água": ca_ajustada / cc if cc > 0 else 0,
-        "Aditivo": c_adit / cc if cc > 0 else 0
+        "Aditivo": c_adit / cc if cc > 0 else 0,
     }
-    
-    # CORREÇÃO 7: Índice de inchamento respondendo de forma ativa na Seção 2
+
     fator_inchamento = 1.0 + (inchamento_areia / 100.0)
-    vol_obra_areia_a = ((traco_unit["Areia A"] * 50) * fator_inchamento) / (mu_areia_sel / 1000) if ca_a > 0 else 0
-    vol_obra_areia_b = ((traco_unit["Areia B"] * 50) * fator_inchamento) / (mu_areia_sel / 1000) if ca_b > 0 else 0
-    vol_obra_brita_a = ((traco_unit["Brita A"] * 50)) / (mu_brita_sel / 1000) if cb_a > 0 else 0
-    vol_obra_brita_b = ((traco_unit["Brita B"] * 50)) / (mu_brita_sel / 1000) if cb_b > 0 else 0
-    vol_obra_brita_c = ((traco_unit["Brita C"] * 50)) / (mu_brita_sel / 1000) if cb_c > 0 else 0
-    vol_obra_agua = max(0.0, (traco_unit["Água"] * 50))
+    massa_saco = 50 * qtd_sacos  # kg de cimento totais a partir da qtde de sacos escolhida
+
+    vol_areia_a = ((traco_unit["Areia A"] * massa_saco) * fator_inchamento) / (mu_areia_sel / 1000) if ca_a > 0 else 0
+    vol_areia_b = ((traco_unit["Areia B"] * massa_saco) * fator_inchamento) / (mu_areia_sel / 1000) if ca_b > 0 else 0
+    vol_brita_a = (traco_unit["Brita A"] * massa_saco) / (mu_brita_sel / 1000) if cb_a > 0 else 0
+    vol_brita_b = (traco_unit["Brita B"] * massa_saco) / (mu_brita_sel / 1000) if cb_b > 0 else 0
+    vol_brita_c = (traco_unit["Brita C"] * massa_saco) / (mu_brita_sel / 1000) if cb_c > 0 else 0
+    vol_agua = max(0.0, traco_unit["Água"] * massa_saco)
+    vol_aditivo = (traco_unit["Aditivo"] * massa_saco) / me_aditivo_sel
 
     return {
         "ac": ac, "ca": ca_ajustada, "cc": cc, "c_adit": c_adit, "peso_total": peso_total,
-        "ca_a": ca_a, "ca_b": ca_b, "cb_a": cb_a, "cb_b": cb_b, "cb_c": cb_c,
+        "ca_a": ca_a, "ca_b": ca_b, "cb_a": cb_a, "cb_b": cb_b, "cb_c": cb_c, "fcj_proximo": fcj_proximo,
+        "teor_argamassa": teor_argamassa_tabela,
         "unitario": traco_unit,
         "obra_litros": {
-            "Areia A": vol_obra_areia_a, "Areia B": vol_obra_areia_b,
-            "Brita A": vol_obra_brita_a, "Brita B": vol_obra_brita_b, "Brita C": vol_obra_brita_c,
-            "Água": vol_obra_agua, "Aditivo": (traco_unit["Aditivo"] * 50) / me_aditivo_sel
-        }
+            "Areia A": vol_areia_a, "Areia B": vol_areia_b,
+            "Brita A": vol_brita_a, "Brita B": vol_brita_b, "Brita C": vol_brita_c,
+            "Água": vol_agua, "Aditivo": vol_aditivo,
+        },
     }
 
-res_32 = calcular_dosagem_abcp("CP II 32")
-res_40 = calcular_dosagem_abcp("CP II 40")
+
+res_32 = buscar_e_calcular_traco("CP II 32")
+res_40 = buscar_e_calcular_traco("CP II 40")
 
 if erro_brita or erro_areia:
     st.error("🚨 Ajuste a barra lateral: As somas das Britas e Areias precisam dar exatamente 100% para liberar os resultados.")
 else:
     st.header("Seção 1: Traço dos Materiais em Massa (kg/m³)")
     col_m32, col_m40 = st.columns(2)
-    
+
     with col_m32:
         st.subheader("Cimento CP II-32")
-        st.caption(f"Relação a/c Calculada: {res_32['ac']:.2f} | Água Efetiva: {res_32['ca']:.0f} L")
-        
-        # Correção estrutural das listas de dados para impedir SyntaxError no Streamlit Cloud
-        massa_dados_32 = [
-            [int(round(res_32['cc'])), f"1.00"],
-            [int(round(res_32['ca_a'])), f"{res_32['unitario']['Areia A']:.2f}"],
-            [int(round(res_32['ca_b'])), f"{res_32['unitario']['Areia B']:.2f}"],
-            [int(round(res_32['cb_a'])), f"{res_32['unitario']['Brita A']:.2f}"],
-            [int(round(res_32['cb_b'])), f"{res_32['unitario']['Brita B']:.2f}"],
-            [int(round(res_32['cb_c'])), f"{res_32['unitario']['Brita C']:.2f}"],
-            [int(round(res_32['ca'])), f"{res_32['unitario']['Água']:.2f}"],
-            [int(round(res_32['c_adit'])), f"{res_32['unitario']['Aditivo']:.3f}"]
-        ]
-        df_32_massa = pd.DataFrame(massa_dados_32, columns=["Massa Corrigida (kg)", "Traço Unitário"], index=["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"])
-        st.dataframe(df_32_massa, use_container_width=True)
+        st.caption(f"fcj Buscado: {res_32['fcj_proximo']:.1f} MPa | Relação a/c: {res_32['ac']:.2f}")
+        df_32_massa = pd.DataFrame({
+            "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
+            "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), int(round(res_32['c_adit']))],
+            "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"],
+        })
+        st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
+        st.metric("Teor de Argamassa (tabela)", f"{res_32['teor_argamassa']}%")
         st.metric("Massa Total Adensada (32)", f"{int(round(res_32['peso_total']))} kg/m³")
-        st.metric("Teor de Argamassa Real (32)", f"{teor_argamassa_escolhido}%")
-        
+
     with col_m40:
         st.subheader("Cimento CP II-40")
-        st.caption(f"Relação a/c Calculada: {res_40['ac']:.2f} | Água Efetiva: {res_40['ca']:.0f} L")
-        
-        massa_dados_40 = [
-            [int(round(res_40['cc'])), f"1.00"],
-            [int(round(res_40['ca_a'])), f"{res_40['unitario']['Areia A']:.2f}"],
-            [int(round(res_40['ca_b'])), f"{res_40['unitario']['Areia B']:.2f}"],
-            [int(round(res_40['cb_a'])), f"{res_40['unitario']['Brita A']:.2f}"],
-            [int(round(res_40['cb_b'])), f"{res_40['unitario']['Brita B']:.2f}"],
-            [int(round(res_40['cb_c'])), f"{res_40['unitario']['Brita C']:.2f}"],
-            [int(round(res_40['ca'])), f"{res_40['unitario']['Água']:.2f}"],
-            [int(round(res_40['c_adit'])), f"{res_40['unitario']['Aditivo']:.3f}"]
-        ]
-        df_40_massa = pd.DataFrame(massa_dados_40, columns=["Massa Corrigida (kg)", "Traço Unitário"], index=["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"])
-        st.dataframe(df_40_massa, use_container_width=True)
+        st.caption(f"fcj Buscado: {res_40['fcj_proximo']:.1f} MPa | Relação a/c: {res_40['ac']:.2f}")
+        df_40_massa = pd.DataFrame({
+            "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
+            "Massa Corrigida (kg)": [int(round(res_40['cc'])), int(round(res_40['ca_a'])), int(round(res_40['ca_b'])), int(round(res_40['cb_a'])), int(round(res_40['cb_b'])), int(round(res_40['cb_c'])), int(round(res_40['ca'])), int(round(res_40['c_adit']))],
+            "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"],
+        })
+        st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
+        st.metric("Teor de Argamassa (tabela)", f"{res_40['teor_argamassa']}%")
         st.metric("Massa Total Adensada (40)", f"{int(round(res_40['peso_total']))} kg/m³")
-        st.metric("Teor de Argamassa Real (40)", f"{teor_argamassa_escolhido}%")
-    
+
     st.markdown("---")
-    st.header("Seção 2: Traço de Obra em Volumes (50 litros)")
-    col_o32, col_o40 = st.columns(2)
-    
-    with col_o32:
-        st.subheader("Cimento CP II-32 - Volumes para 50L")
-        obra_dados_32 = [
-            [50, "Cimento (kg)"],
-            [res_32['obra_litros']['Areia A'], "Areia A (L)"],
-            [res_32['obra_litros']['Areia B'], "Areia B (L)"],
-            [res_32['obra_litros']['Brita A'], "Brita A (L)"],
-            [res_32['obra_litros']['Brita B'], "Brita B (L)"],
-            [res_32['obra_litros']['Brita C'], "Brita C (L)"],
-            [res_32['obra_litros']['Água'], "Água (L)"],
-            [res_32['obra_litros']['Aditivo'], "Aditivo (L)"]
-        ]
-        df_o32 = pd.DataFrame(obra_dados_32, columns=["Quantidade", "Material"])
-        st.dataframe(df_o32, use_container_width=True)
-    
-    with col_o40:
-        st.subheader("Cimento CP II-40 - Volumes para 50L")
-        obra_dados_40 = [
-            [50, "Cimento (kg)"],
-            [res_40['obra_litros']['Areia A'], "Areia A (L)"],
-            [res_40['obra_litros']['Areia B'], "Areia B (L)"],
-            [res_40['obra_litros']['Brita A'], "Brita A (L)"],
-            [res_40['obra_litros']['Brita B'], "Brita B (L)"],
-            [res_40['obra_litros']['Brita C'], "Brita C (L)"],
-            [res_40['obra_litros']['Água'], "Água (L)"],
-            [res_40['obra_litros']['Aditivo'], "Aditivo (L)"]
-        ]
-        df_o40 = pd.DataFrame(obra_dados_40, columns=["Quantidade", "Material"])
-        st.dataframe(df_o40, use_container_width=True)
+    st.header(f"Seção 2: Proporções em Volume Prático (Litros para {qtd_sacos} Saco(s) de 50kg)")
+
+    st.subheader("Volume com Cimento CP II-32")
+    df_32_vol = pd.DataFrame({
+        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+        "Volume Necessário": [f"{res_32['obra_litros']['Areia A']:.1f}", f"{res_32['obra_litros']['Areia B']:.1f}", f"{res_32['obra_litros']['Brita A']:.1f}", f"{res_32['obra_litros']['Brita B']:.1f}", f"{res_32['obra_litros']['Brita C']:.1f}", f"{res_32['obra_litros']['Água']:.1f}", f"{res_32['obra_litros']['Aditivo']:.3f}"],
+    })
+    st.dataframe(df_32_vol, use_container_width=True, hide_index=True)
+
+    st.subheader("Volume com Cimento CP II-40")
+    df_40_vol = pd.DataFrame({
+        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+        "Volume Necessário": [f"{res_40['obra_litros']['Areia A']:.1f}", f"{res_40['obra_litros']['Areia B']:.1f}", f"{res_40['obra_litros']['Brita A']:.1f}", f"{res_40['obra_litros']['Brita B']:.1f}", f"{res_40['obra_litros']['Brita C']:.1f}", f"{res_40['obra_litros']['Água']:.1f}", f"{res_40['obra_litros']['Aditivo']:.3f}"],
+    })
+    st.dataframe(df_40_vol, use_container_width=True, hide_index=True)
