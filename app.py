@@ -99,14 +99,22 @@ me_aditivo_sel = st.sidebar.selectbox("Massa Específica Aditivo (kg/m³)", opti
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🪨 Divisão dos Agregados (%)")
-p_brita_a = st.sidebar.slider("% Brita A", 0, 100, 100)
-p_brita_b = st.sidebar.slider("% Brita B", 0, 100, 0)
-p_brita_c = st.sidebar.slider("% Brita C", 0, 100, 0)
-p_areia_a = st.sidebar.slider("% Areia A", 0, 100, 100)
-p_areia_b = st.sidebar.slider("% Areia B", 0, 100, 0)
 
-erro_brita = (p_brita_a + p_brita_b + p_brita_c) != 100
-erro_areia = (p_areia_a + p_areia_b) != 100
+st.sidebar.markdown("**Brita**")
+p_brita_a = st.sidebar.number_input("% Brita A", min_value=0, max_value=100, value=100, step=1)
+p_brita_b = st.sidebar.number_input("% Brita B", min_value=0, max_value=100, value=0, step=1)
+p_brita_c = 100 - p_brita_a - p_brita_b
+erro_brita = p_brita_c < 0
+if erro_brita:
+    st.sidebar.error(f"🚨 Brita A + B = {p_brita_a + p_brita_b}%. A soma não pode superar 100%.")
+    p_brita_c = 0
+else:
+    st.sidebar.caption(f"% Brita C (automático): {p_brita_c}%")
+
+st.sidebar.markdown("**Areia**")
+p_areia_a = st.sidebar.number_input("% Areia A", min_value=0, max_value=100, value=100, step=1)
+p_areia_b = 100 - p_areia_a
+st.sidebar.caption(f"% Areia B (automático): {p_areia_b}%")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🪣 Parâmetros de Obra")
@@ -214,8 +222,8 @@ def buscar_e_calcular_traco(tipo_cimento):
 res_32 = buscar_e_calcular_traco("CP II 32")
 res_40 = buscar_e_calcular_traco("CP II 40")
 
-if erro_brita or erro_areia:
-    st.error("🚨 Ajuste a barra lateral: As somas das Britas e Areias precisam dar exatamente 100% para liberar os resultados.")
+if erro_brita:
+    st.error("🚨 Ajuste a divisão das Britas na barra lateral: a soma de Brita A + B não pode superar 100%.")
 else:
     st.header("Seção 1: Traço dos Materiais em Massa (kg/m³)")
     col_m32, col_m40 = st.columns(2)
