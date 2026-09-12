@@ -5,14 +5,14 @@ import os
 # -----------------------------------------------------------------------------
 # CONFIGURAÇÃO DA PÁGINA
 # -----------------------------------------------------------------------------
-st.set_page_config(page_title="Calculadora ABCP Pro", layout="wide")
+st.set_page_config(page_title="Elaborador para traços de concreto - Laboratorio 47", layout="wide")
 
 col_logo, col_titulo = st.columns([1, 5])
 with col_logo:
-    if os.path.exists("logo.jpeg"):
-        st.image("logo.jpeg", width=140)
+    if os.path.exists("logo.jpg"):
+        st.image("logo.jpg", width=140)
 with col_titulo:
-    st.title("Calculadora de Traços de Concreto - Método ABCP")
+    st.title("Elaborador para traços de concreto - Laboratorio 47")
     st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
 
 # -----------------------------------------------------------------------------
@@ -24,6 +24,8 @@ def carregar_dados():
     massas = pd.read_csv("massas.csv")
     umidade_inchamento = pd.read_csv("umidade_inchamento.csv")
     sacos = pd.read_csv("sacos_cimento.csv")
+    # O teor de argamassa deve ser sempre tratado como número inteiro
+    tracos["teor_argamassa"] = tracos["teor_argamassa"].round(0).astype(int)
     return tracos, massas, umidade_inchamento, sacos
 
 df_tracos, df_massas, df_umid, df_sacos = carregar_dados()
@@ -37,6 +39,7 @@ lista_umidade = df_umid["umidade"].dropna().tolist()
 lista_inchamento = df_umid["inchamento"].dropna().tolist()
 lista_sacos = df_sacos["sacos"].dropna().astype(int).tolist()
 lista_dmax = sorted(df_tracos["dmax"].unique().tolist())
+lista_teor_argamassa = sorted(df_tracos["teor_argamassa"].unique().tolist())
 
 lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]  # sem tabela própria enviada
 
@@ -60,6 +63,15 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("💧 Consumo de Água (Slump)")
 slump_escolhido = st.sidebar.number_input("Abatimento / Slump (mm)", min_value=70, max_value=140, value=100, step=10)
 dmax_escolhido = st.sidebar.selectbox("Diâmetro Máximo Brita Dmáx (mm)", options=lista_dmax, index=min(2, len(lista_dmax) - 1))
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🧱 Teor de Argamassa")
+teor_escolhido = st.sidebar.selectbox(
+    "Teor de Argamassa (%)",
+    options=lista_teor_argamassa,
+    index=len(lista_teor_argamassa) - 1,
+    help="Define a proporção de argamassa usada na busca do traço. Valores sempre inteiros (45% a 60%).",
+)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📐 Propriedades Físicas dos Materiais")
@@ -127,8 +139,15 @@ def buscar_e_calcular_traco(tipo_cimento):
         (abs(dados_cimento["fcj"] - fcj_proximo) < 0.1)
         & (dados_cimento["slump"] == slump_ajustado)
         & (dados_cimento["dmax"] == dmax_ajustado)
+        & (dados_cimento["teor_argamassa"] == int(teor_escolhido))
     ]
 
+    if linha.empty:
+        linha = dados_cimento[
+            (abs(dados_cimento["fcj"] - fcj_proximo) < 0.1)
+            & (dados_cimento["slump"] == slump_ajustado)
+            & (dados_cimento["dmax"] == dmax_ajustado)
+        ]
     if linha.empty:
         linha = dados_cimento.iloc[[0]]
     linha = linha.iloc[0]
@@ -141,7 +160,7 @@ def buscar_e_calcular_traco(tipo_cimento):
 
     brita_total_seca = linha["consumo_brita"]
     areia_total_seca = linha["consumo_areia"]
-    teor_argamassa_tabela = int(linha["teor_argamassa"])
+    teor_argamassa_tabela = int(round(linha["teor_argamassa"]))
 
     # Ajuste de Umidade na Massa da Areia e Desconto na Água Efetiva
     agua_na_areia = areia_total_seca * (umidade_areia / 100.0)
