@@ -7,13 +7,61 @@ import os
 # -----------------------------------------------------------------------------
 st.set_page_config(page_title="Elaborador para traços de concreto - Laboratorio 47", layout="wide")
 
+# -----------------------------------------------------------------------------
+# ESTILO (visual mais profissional: cards, campos automáticos e espaçamentos)
+# -----------------------------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2.5rem;
+    }
+
+    /* Campos calculados automaticamente (somente leitura) com o mesmo formato
+       dos campos editáveis, porém sem os botões +/- e com destaque visual */
+    div[data-testid="stTextInput"] input:disabled {
+        background-color: #F1F3F4;
+        color: #1B1B1B;
+        font-weight: 600;
+        opacity: 1;
+        border: 1px solid #C8C8C8;
+        -webkit-text-fill-color: #1B1B1B;
+    }
+
+    /* Cartões de resultado com cantos arredondados e sombra suave */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Métricas com leve realce em forma de cartão */
+    div[data-testid="stMetric"] {
+        background-color: #F8F9FA;
+        border: 1px solid #E0E0E0;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+    }
+
+    /* Cabeçalhos da barra lateral com destaque na cor do laboratório */
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #2E7D32;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 col_logo, col_titulo = st.columns([1, 5])
 with col_logo:
     if os.path.exists("logo.jpg"):
         st.image("logo.jpg", width=140)
 with col_titulo:
-    st.title("Elaborador para traços de concreto - Laboratorio 47")
+    st.title("🏗️ Elaborador para traços de concreto - Laboratorio 47")
     st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
+
+st.divider()
 
 # -----------------------------------------------------------------------------
 # CARREGAMENTO DOS DADOS (arquivos gerados a partir de "tabelas completas.xlsx")
@@ -52,20 +100,20 @@ FCK_MAX = float(round(df_tracos["fck"].max()))
 # -----------------------------------------------------------------------------
 # CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
 # -----------------------------------------------------------------------------
-st.sidebar.header("Resistência à compressão")
+st.sidebar.header("📊 Resistência à compressão")
 fck = st.sidebar.number_input(
     "fck Desejado (MPa)", min_value=FCK_MIN, max_value=FCK_MAX, value=FCK_MIN + 10.0, step=5.0
 )
 sd = 4.0
 fcj = fck + 1.65 * sd
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Abatimento/Dmax")
+st.sidebar.divider()
+st.sidebar.subheader("📐 Abatimento/Dmax")
 slump_escolhido = st.sidebar.number_input("Abatimento / Slump (mm)", min_value=70, max_value=140, value=100, step=10)
 dmax_escolhido = st.sidebar.selectbox("Diâmetro máximo da brita (mm)", options=lista_dmax, index=min(2, len(lista_dmax) - 1))
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Teor de Argamassa")
+st.sidebar.divider()
+st.sidebar.subheader("🧮 Teor de Argamassa")
 teor_escolhido = st.sidebar.selectbox(
     "Teor de Argamassa (%)",
     options=lista_teor_argamassa,
@@ -73,8 +121,8 @@ teor_escolhido = st.sidebar.selectbox(
     help="Define a proporção de argamassa usada na busca do traço. Valores sempre inteiros (45% a 60%).",
 )
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Divisão dos Agregados (%)")
+st.sidebar.divider()
+st.sidebar.subheader("⚙️ Divisão dos Agregados (%)")
 
 st.sidebar.markdown("**Brita**")
 p_brita_a = st.sidebar.number_input("% Brita A", min_value=0, max_value=100, value=100, step=1)
@@ -84,22 +132,31 @@ erro_brita = p_brita_c < 0
 if erro_brita:
     st.sidebar.error(f"Brita A + B = {p_brita_a + p_brita_b}%. A soma não pode superar 100%.")
     p_brita_c = 0
-else:
-    st.sidebar.caption(f"% Brita C (automático): {p_brita_c}%")
+st.sidebar.text_input(
+    "% Brita C (automático)",
+    value=f"{p_brita_c}",
+    disabled=True,
+    key="brita_c_display",
+)
 
 st.sidebar.markdown("**Areia**")
 p_areia_a = st.sidebar.number_input("% Areia A", min_value=0, max_value=100, value=100, step=1)
 p_areia_b = 100 - p_areia_a
-st.sidebar.caption(f"% Areia B (automático): {p_areia_b}%")
+st.sidebar.text_input(
+    "% Areia B (automático)",
+    value=f"{p_areia_b}",
+    disabled=True,
+    key="areia_b_display",
+)
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Parâmetros de Obra")
+st.sidebar.divider()
+st.sidebar.subheader("🏗️ Parâmetros de Obra")
 umidade_areia = st.sidebar.selectbox("Umidade da Areia (%)", options=lista_umidade, index=0)
 inchamento_areia = st.sidebar.selectbox("Inchamento da Areia (%)", options=lista_inchamento, index=0)
 qtd_sacos = st.sidebar.selectbox("Quantidade de Sacos de Cimento (50kg)", options=lista_sacos, index=0)
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Propriedades Físicas dos Materiais")
+st.sidebar.divider()
+st.sidebar.subheader("🔬 Propriedades Físicas dos Materiais")
 me_cimento_sel = st.sidebar.selectbox(
     "Massa Específica Cimento (kg/m³)", options=lista_me_cimento,
     index=indice_mais_proximo(lista_me_cimento, 3100)
@@ -125,13 +182,14 @@ me_aditivo_sel = st.sidebar.selectbox("Massa Específica Aditivo (kg/m³)", opti
 # -----------------------------------------------------------------------------
 # PAINEL CENTRAL DE RESULTADOS
 # -----------------------------------------------------------------------------
-col_fck, col_fcj = st.columns(2)
-with col_fck:
-    st.metric(label="fck Selecionado", value=f"{fck:.1f} MPa")
-with col_fcj:
-    st.metric(label="fcj 28 Dias Calculado", value=f"{fcj:.1f} MPa", delta="sd = 4.0")
+with st.container(border=True):
+    col_fck, col_fcj = st.columns(2)
+    with col_fck:
+        st.metric(label="fck Selecionado", value=f"{fck:.1f} MPa")
+    with col_fcj:
+        st.metric(label="fcj 28 Dias Calculado", value=f"{fcj:.1f} MPa", delta="sd = 4.0")
 
-st.markdown("---")
+st.divider()
 
 
 def buscar_e_calcular_traco(tipo_cimento):
@@ -225,46 +283,59 @@ res_40 = buscar_e_calcular_traco("CP II 40")
 if erro_brita:
     st.error("Ajuste a divisão das Britas na barra lateral: a soma de Brita A + B não pode superar 100%.")
 else:
-    st.header("Traço dos Materiais em Massa (kg/m³)")
+    st.header("⚖️ Traço dos Materiais em Massa (kg/m³)")
     col_m32, col_m40 = st.columns(2)
 
     with col_m32:
-        st.subheader("Cimento CP II-32")
-        st.caption(f"fcj Buscado: {res_32['fcj_proximo']:.1f} MPa | Relação a/c: {res_32['ac']:.2f}")
-        df_32_massa = pd.DataFrame({
-            "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
-            "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), f"{res_32['c_adit']:.2f}"],
-            "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"],
-        })
-        st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
-        st.metric("Teor de Argamassa (tabela)", f"{res_32['teor_argamassa']}%")
-        st.metric("Massa Total Adensada (32)", f"{int(round(res_32['peso_total']))} kg/m³")
+        with st.container(border=True):
+            st.subheader("Cimento CP II-32")
+            st.caption(f"fcj Buscado: {res_32['fcj_proximo']:.1f} MPa | Relação a/c: {res_32['ac']:.2f}")
+            df_32_massa = pd.DataFrame({
+                "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
+                "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), f"{res_32['c_adit']:.2f}"],
+                "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"],
+            })
+            st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
+            col_32_a, col_32_b = st.columns(2)
+            with col_32_a:
+                st.metric("Teor de Argamassa (tabela)", f"{res_32['teor_argamassa']}%")
+            with col_32_b:
+                st.metric("Massa Total Adensada", f"{int(round(res_32['peso_total']))} kg/m³")
 
     with col_m40:
-        st.subheader("Cimento CP II-40")
-        st.caption(f"fcj Buscado: {res_40['fcj_proximo']:.1f} MPa | Relação a/c: {res_40['ac']:.2f}")
-        df_40_massa = pd.DataFrame({
-            "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
-            "Massa Corrigida (kg)": [int(round(res_40['cc'])), int(round(res_40['ca_a'])), int(round(res_40['ca_b'])), int(round(res_40['cb_a'])), int(round(res_40['cb_b'])), int(round(res_40['cb_c'])), int(round(res_40['ca'])), f"{res_40['c_adit']:.2f}"],
-            "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"],
-        })
-        st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
-        st.metric("Teor de Argamassa (tabela)", f"{res_40['teor_argamassa']}%")
-        st.metric("Massa Total Adensada (40)", f"{int(round(res_40['peso_total']))} kg/m³")
+        with st.container(border=True):
+            st.subheader("Cimento CP II-40")
+            st.caption(f"fcj Buscado: {res_40['fcj_proximo']:.1f} MPa | Relação a/c: {res_40['ac']:.2f}")
+            df_40_massa = pd.DataFrame({
+                "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
+                "Massa Corrigida (kg)": [int(round(res_40['cc'])), int(round(res_40['ca_a'])), int(round(res_40['ca_b'])), int(round(res_40['cb_a'])), int(round(res_40['cb_b'])), int(round(res_40['cb_c'])), int(round(res_40['ca'])), f"{res_40['c_adit']:.2f}"],
+                "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"],
+            })
+            st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
+            col_40_a, col_40_b = st.columns(2)
+            with col_40_a:
+                st.metric("Teor de Argamassa (tabela)", f"{res_40['teor_argamassa']}%")
+            with col_40_b:
+                st.metric("Massa Total Adensada", f"{int(round(res_40['peso_total']))} kg/m³")
 
-    st.markdown("---")
-    st.header(f"Proporções em Volume (Litros para {qtd_sacos} Saco(s) de 50kg)")
+    st.divider()
+    st.header(f"🪣 Proporções em Volume (Litros para {qtd_sacos} Saco(s) de 50kg)")
 
-    st.subheader("Volume com Cimento CP II-32")
-    df_32_vol = pd.DataFrame({
-        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
-        "Volume Necessário": [f"{res_32['obra_litros']['Areia A']:.1f}", f"{res_32['obra_litros']['Areia B']:.1f}", f"{res_32['obra_litros']['Brita A']:.1f}", f"{res_32['obra_litros']['Brita B']:.1f}", f"{res_32['obra_litros']['Brita C']:.1f}", f"{res_32['obra_litros']['Água']:.1f}", f"{res_32['obra_litros']['Aditivo']:.3f}"],
-    })
-    st.dataframe(df_32_vol, use_container_width=True, hide_index=True)
+    col_v32, col_v40 = st.columns(2)
+    with col_v32:
+        with st.container(border=True):
+            st.subheader("Volume com Cimento CP II-32")
+            df_32_vol = pd.DataFrame({
+                "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+                "Volume Necessário": [f"{res_32['obra_litros']['Areia A']:.1f}", f"{res_32['obra_litros']['Areia B']:.1f}", f"{res_32['obra_litros']['Brita A']:.1f}", f"{res_32['obra_litros']['Brita B']:.1f}", f"{res_32['obra_litros']['Brita C']:.1f}", f"{res_32['obra_litros']['Água']:.1f}", f"{res_32['obra_litros']['Aditivo']:.3f}"],
+            })
+            st.dataframe(df_32_vol, use_container_width=True, hide_index=True)
 
-    st.subheader("Volume com Cimento CP II-40")
-    df_40_vol = pd.DataFrame({
-        "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
-        "Volume Necessário": [f"{res_40['obra_litros']['Areia A']:.1f}", f"{res_40['obra_litros']['Areia B']:.1f}", f"{res_40['obra_litros']['Brita A']:.1f}", f"{res_40['obra_litros']['Brita B']:.1f}", f"{res_40['obra_litros']['Brita C']:.1f}", f"{res_40['obra_litros']['Água']:.1f}", f"{res_40['obra_litros']['Aditivo']:.3f}"],
-    })
-    st.dataframe(df_40_vol, use_container_width=True, hide_index=True)
+    with col_v40:
+        with st.container(border=True):
+            st.subheader("Volume com Cimento CP II-40")
+            df_40_vol = pd.DataFrame({
+                "Material": ["Areia A (L)", "Areia B (L)", "Brita A (L)", "Brita B (L)", "Brita C (L)", "Água (L)", "Aditivo (L)"],
+                "Volume Necessário": [f"{res_40['obra_litros']['Areia A']:.1f}", f"{res_40['obra_litros']['Areia B']:.1f}", f"{res_40['obra_litros']['Brita A']:.1f}", f"{res_40['obra_litros']['Brita B']:.1f}", f"{res_40['obra_litros']['Brita C']:.1f}", f"{res_40['obra_litros']['Água']:.1f}", f"{res_40['obra_litros']['Aditivo']:.3f}"],
+            })
+            st.dataframe(df_40_vol, use_container_width=True, hide_index=True)
