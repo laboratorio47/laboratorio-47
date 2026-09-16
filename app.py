@@ -58,7 +58,8 @@ with col_logo:
     if os.path.exists("logo.jpg"):
         st.image("logo.jpg", width=140)
 with col_titulo:
-    st.title("🏗️ Elaborador para traços de concreto - Laboratorio 47")
+    st.title("Elaborador para Traços de Concreto")
+    st.caption("Laboratorio 47")
     st.write("Modifique os parâmetros na barra lateral esquerda. O recálculo ocorrerá automaticamente.")
 
 st.divider()
@@ -100,7 +101,7 @@ FCK_MAX = float(round(df_tracos["fck"].max()))
 # -----------------------------------------------------------------------------
 # CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
 # -----------------------------------------------------------------------------
-st.sidebar.header("📊 Resistência à compressão")
+st.sidebar.header("Resistência à compressão")
 fck = st.sidebar.number_input(
     "fck Desejado (MPa)", min_value=FCK_MIN, max_value=FCK_MAX, value=FCK_MIN + 10.0, step=5.0
 )
@@ -108,12 +109,12 @@ sd = 4.0
 fcj = fck + 1.65 * sd
 
 st.sidebar.divider()
-st.sidebar.subheader("📐 Abatimento/Dmax")
+st.sidebar.subheader("Abatimento/Dmax")
 slump_escolhido = st.sidebar.number_input("Abatimento / Slump (mm)", min_value=70, max_value=140, value=100, step=10)
 dmax_escolhido = st.sidebar.selectbox("Diâmetro máximo da brita (mm)", options=lista_dmax, index=min(2, len(lista_dmax) - 1))
 
 st.sidebar.divider()
-st.sidebar.subheader("🧮 Teor de Argamassa")
+st.sidebar.subheader("Teor de Argamassa")
 teor_escolhido = st.sidebar.selectbox(
     "Teor de Argamassa (%)",
     options=lista_teor_argamassa,
@@ -122,7 +123,7 @@ teor_escolhido = st.sidebar.selectbox(
 )
 
 st.sidebar.divider()
-st.sidebar.subheader("⚙️ Divisão dos Agregados (%)")
+st.sidebar.subheader("Divisão dos Agregados (%)")
 
 st.sidebar.markdown("**Brita**")
 p_brita_a = st.sidebar.number_input("% Brita A", min_value=0, max_value=100, value=100, step=1)
@@ -132,9 +133,13 @@ erro_brita = p_brita_c < 0
 if erro_brita:
     st.sidebar.error(f"Brita A + B = {p_brita_a + p_brita_b}%. A soma não pode superar 100%.")
     p_brita_c = 0
+# Widgets desabilitados não atualizam sozinhos a partir do parâmetro "value" em
+# reruns subsequentes (o Streamlit mantém o valor já registrado no session_state
+# associado à key). Por isso o valor é escrito explicitamente no session_state
+# antes de instanciar o campo, garantindo que ele sempre reflita o cálculo atual.
+st.session_state["brita_c_display"] = f"{p_brita_c}"
 st.sidebar.text_input(
     "% Brita C (automático)",
-    value=f"{p_brita_c}",
     disabled=True,
     key="brita_c_display",
 )
@@ -142,21 +147,21 @@ st.sidebar.text_input(
 st.sidebar.markdown("**Areia**")
 p_areia_a = st.sidebar.number_input("% Areia A", min_value=0, max_value=100, value=100, step=1)
 p_areia_b = 100 - p_areia_a
+st.session_state["areia_b_display"] = f"{p_areia_b}"
 st.sidebar.text_input(
     "% Areia B (automático)",
-    value=f"{p_areia_b}",
     disabled=True,
     key="areia_b_display",
 )
 
 st.sidebar.divider()
-st.sidebar.subheader("🏗️ Parâmetros de Obra")
+st.sidebar.subheader("Parâmetros de Obra")
 umidade_areia = st.sidebar.selectbox("Umidade da Areia (%)", options=lista_umidade, index=0)
 inchamento_areia = st.sidebar.selectbox("Inchamento da Areia (%)", options=lista_inchamento, index=0)
 qtd_sacos = st.sidebar.selectbox("Quantidade de Sacos de Cimento (50kg)", options=lista_sacos, index=0)
 
 st.sidebar.divider()
-st.sidebar.subheader("🔬 Propriedades Físicas dos Materiais")
+st.sidebar.subheader("Propriedades Físicas dos Materiais")
 me_cimento_sel = st.sidebar.selectbox(
     "Massa Específica Cimento (kg/m³)", options=lista_me_cimento,
     index=indice_mais_proximo(lista_me_cimento, 3100)
@@ -283,7 +288,7 @@ res_40 = buscar_e_calcular_traco("CP II 40")
 if erro_brita:
     st.error("Ajuste a divisão das Britas na barra lateral: a soma de Brita A + B não pode superar 100%.")
 else:
-    st.header("⚖️ Traço dos Materiais em Massa (kg/m³)")
+    st.header("Traço dos Materiais em Massa (kg/m³)")
     col_m32, col_m40 = st.columns(2)
 
     with col_m32:
@@ -319,7 +324,7 @@ else:
                 st.metric("Massa Total Adensada", f"{int(round(res_40['peso_total']))} kg/m³")
 
     st.divider()
-    st.header(f"🪣 Proporções em Volume (Litros para {qtd_sacos} Saco(s) de 50kg)")
+    st.header(f"Proporções em Volume (Litros para {qtd_sacos} Saco(s) de 50kg)")
 
     col_v32, col_v40 = st.columns(2)
     with col_v32:
