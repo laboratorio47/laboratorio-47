@@ -43,10 +43,10 @@ st.markdown(
         padding: 0.6rem 0.8rem;
     }
     div[data-testid="stMetric"] > div:first-child {
-        font-size: 0.75rem !important;
+        font-size: 0.9rem !important;
     }
     div[data-testid="stMetric"] label[data-testid="stMetricLabel"] p {
-        font-size: 0.7rem !important;
+        font-size: 0.85rem !important;
     }
 
     /* Cabeçalhos da barra lateral com destaque na cor do laboratório */
