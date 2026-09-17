@@ -310,34 +310,42 @@ else:
     with col_m32:
         with st.container(border=True):
             st.subheader("Cimento CP II-32")
-            st.caption(f"fcj {res_32['fcj_proximo']:.1f} MPa | Relação a/c: {res_32['ac']:.2f}")
+            st.caption(f"fcj {res_32['fcj_proximo']:.1f} MPa")
             df_32_massa = pd.DataFrame({
                 "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
                 "Massa Corrigida (kg)": [int(round(res_32['cc'])), int(round(res_32['ca_a'])), int(round(res_32['ca_b'])), int(round(res_32['cb_a'])), int(round(res_32['cb_b'])), int(round(res_32['cb_c'])), int(round(res_32['ca'])), f"{res_32['c_adit']:.2f}"],
                 "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"],
             })
             st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
-            col_32_a, col_32_b = st.columns(2)
+            col_32_a, col_32_b, col_32_c, col_32_d = st.columns(4)
             with col_32_a:
                 st.metric("Teor de Argamassa", f"{res_32['teor_argamassa']}%")
             with col_32_b:
                 st.metric("Massa Total", f"{int(round(res_32['peso_total']))} kg/m³")
+            with col_32_c:
+                st.metric("Abatimento", f"{slump_escolhido} mm")
+            with col_32_d:
+                st.metric("Relação a/c", f"{res_32['ac']:.2f}")
 
     with col_m40:
         with st.container(border=True):
             st.subheader("Cimento CP II-40")
-            st.caption(f"fcj {res_40['fcj_proximo']:.1f} MPa | Relação a/c: {res_40['ac']:.2f}")
+            st.caption(f"fcj {res_40['fcj_proximo']:.1f} MPa")
             df_40_massa = pd.DataFrame({
                 "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
                 "Massa Corrigida (kg)": [int(round(res_40['cc'])), int(round(res_40['ca_a'])), int(round(res_40['ca_b'])), int(round(res_40['cb_a'])), int(round(res_40['cb_b'])), int(round(res_40['cb_c'])), int(round(res_40['ca'])), f"{res_40['c_adit']:.2f}"],
                 "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"],
             })
             st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
-            col_40_a, col_40_b = st.columns(2)
+            col_40_a, col_40_b, col_40_c, col_40_d = st.columns(4)
             with col_40_a:
                 st.metric("Teor de Argamassa", f"{res_40['teor_argamassa']}%")
             with col_40_b:
                 st.metric("Massa Total", f"{int(round(res_40['peso_total']))} kg/m³")
+            with col_40_c:
+                st.metric("Abatimento", f"{slump_escolhido} mm")
+            with col_40_d:
+                st.metric("Relação a/c", f"{res_40['ac']:.2f}")
 
     st.divider()
     st.header(f"Volume de Materiais para {qtd_sacos} Saco(s) de Cimento (50kg)")
