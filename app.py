@@ -98,6 +98,14 @@ def indice_mais_proximo(lista, valor):
 FCK_MIN = float(round(df_tracos["fck"].min()))
 FCK_MAX = float(round(df_tracos["fck"].max()))
 
+# Massas específicas assumidas na montagem da tabela ABCP (dados_tracos.csv).
+# São usadas como referência para corrigir os consumos de cimento, areia e
+# brita quando o usuário informa massas específicas reais diferentes das que
+# foram usadas para gerar a tabela original.
+ME_CIMENTO_REF = 3100.0
+ME_AREIA_REF = 2630.0
+ME_BRITA_REF = 2750.0
+
 # -----------------------------------------------------------------------------
 # CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
 # -----------------------------------------------------------------------------
@@ -162,6 +170,7 @@ qtd_sacos = st.sidebar.selectbox("Quantidade de Sacos de Cimento (50kg)", option
 
 st.sidebar.divider()
 st.sidebar.subheader("Propriedades Físicas dos Materiais")
+st.sidebar.caption("Informe os valores reais dos seus materiais: os consumos de cimento, areia e brita são recalculados automaticamente.")
 me_cimento_sel = st.sidebar.selectbox(
     "Massa Específica Cimento (kg/m³)", options=lista_me_cimento,
     index=indice_mais_proximo(lista_me_cimento, 3100)
@@ -223,15 +232,22 @@ def buscar_e_calcular_traco(tipo_cimento):
         linha = dados_cimento.iloc[[0]]
     linha = linha.iloc[0]
 
-    # Dados exatos da tabela cruzada (já corretos por fcj e por tipo de cimento)
+    # Dados da tabela cruzada, na massa específica de referência usada para
+    # montá-la (já corretos por fcj e por tipo de cimento)
     ac = linha["ac"]
-    cc = linha["consumo_cimento"]
+    cc_tabela = linha["consumo_cimento"]
     ca_inicial = linha["agua"]
-    c_adit = cc * 0.007
-
-    brita_total_seca = linha["consumo_brita"]
-    areia_total_seca = linha["consumo_areia"]
+    brita_total_seca_tabela = linha["consumo_brita"]
+    areia_total_seca_tabela = linha["consumo_areia"]
     teor_argamassa_tabela = int(round(linha["teor_argamassa"]))
+
+    # Corrige os consumos para as massas específicas reais informadas na
+    # barra lateral, mantendo os volumes (e portanto o traço/proporções) da
+    # tabela ABCP: massa_nova = massa_tabela * (massa_especifica_real / massa_especifica_referencia)
+    cc = cc_tabela * (me_cimento_sel / ME_CIMENTO_REF)
+    brita_total_seca = brita_total_seca_tabela * (me_brita_sel / ME_BRITA_REF)
+    areia_total_seca = areia_total_seca_tabela * (me_areia_sel / ME_AREIA_REF)
+    c_adit = cc * 0.007
 
     # Ajuste de Umidade na Massa da Areia e Desconto na Água Efetiva
     agua_na_areia = areia_total_seca * (umidade_areia / 100.0)
