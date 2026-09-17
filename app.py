@@ -323,11 +323,12 @@ else:
                 "Traço Unitário": [f"1", f"{res_32['unitario']['Areia A']:.2f}", f"{res_32['unitario']['Areia B']:.2f}", f"{res_32['unitario']['Brita A']:.2f}", f"{res_32['unitario']['Brita B']:.2f}", f"{res_32['unitario']['Brita C']:.2f}", f"{res_32['unitario']['Água']:.2f}", f"{res_32['unitario']['Aditivo']:.3f}"],
             })
             st.dataframe(df_32_massa, use_container_width=True, hide_index=True)
-            col_32_a, col_32_b, col_32_c, col_32_d = st.columns(4)
+            col_32_a, col_32_b = st.columns(2)
             with col_32_a:
                 st.metric("Teor de Argamassa", f"{res_32['teor_argamassa']}%")
             with col_32_b:
                 st.metric("Massa Total", f"{int(round(res_32['peso_total']))} kg/m³")
+            col_32_c, col_32_d = st.columns(2)
             with col_32_c:
                 st.metric("Abatimento", f"{slump_escolhido} mm")
             with col_32_d:
@@ -343,11 +344,12 @@ else:
                 "Traço Unitário": [f"1", f"{res_40['unitario']['Areia A']:.2f}", f"{res_40['unitario']['Areia B']:.2f}", f"{res_40['unitario']['Brita A']:.2f}", f"{res_40['unitario']['Brita B']:.2f}", f"{res_40['unitario']['Brita C']:.2f}", f"{res_40['unitario']['Água']:.2f}", f"{res_40['unitario']['Aditivo']:.3f}"],
             })
             st.dataframe(df_40_massa, use_container_width=True, hide_index=True)
-            col_40_a, col_40_b, col_40_c, col_40_d = st.columns(4)
+            col_40_a, col_40_b = st.columns(2)
             with col_40_a:
                 st.metric("Teor de Argamassa", f"{res_40['teor_argamassa']}%")
             with col_40_b:
                 st.metric("Massa Total", f"{int(round(res_40['peso_total']))} kg/m³")
+            col_40_c, col_40_d = st.columns(2)
             with col_40_c:
                 st.metric("Abatimento", f"{slump_escolhido} mm")
             with col_40_d:
