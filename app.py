@@ -42,6 +42,12 @@ st.markdown(
         border-radius: 8px;
         padding: 0.6rem 0.8rem;
     }
+    div[data-testid="stMetric"] > div:first-child {
+        font-size: 0.75rem !important;
+    }
+    div[data-testid="stMetric"] label[data-testid="stMetricLabel"] p {
+        font-size: 0.7rem !important;
+    }
 
     /* Cabeçalhos da barra lateral com destaque na cor do laboratório */
     section[data-testid="stSidebar"] h2,
