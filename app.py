@@ -79,11 +79,13 @@ def carregar_dados():
     massas = pd.read_csv("massas.csv")
     umidade_inchamento = pd.read_csv("umidade_inchamento.csv")
     sacos = pd.read_csv("sacos_cimento.csv")
+    modulo_finura = pd.read_csv("modulo_finura.csv")
     # O teor de argamassa deve ser sempre tratado como número inteiro
     tracos["teor_argamassa"] = tracos["teor_argamassa"].round(0).astype(int)
-    return tracos, massas, umidade_inchamento, sacos
+    return tracos, massas, umidade_inchamento, sacos, modulo_finura
 
-df_tracos, df_massas, df_umid, df_sacos = carregar_dados()
+
+df_tracos, df_massas, df_umid, df_sacos, df_mf = carregar_dados()
 
 lista_mu_areia = df_massas["mu_areia"].dropna().tolist()
 lista_me_brita = df_massas["me_brita"].dropna().tolist()
@@ -95,11 +97,14 @@ lista_inchamento = df_umid["inchamento"].dropna().tolist()
 lista_sacos = df_sacos["sacos"].dropna().astype(int).tolist()
 lista_dmax = sorted(df_tracos["dmax"].unique().tolist())
 lista_teor_argamassa = sorted(df_tracos["teor_argamassa"].unique().tolist())
+lista_modulo_finura = df_mf["modulo_finura"].dropna().tolist()
 
 lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]  # sem tabela própria enviada
 
+
 def indice_mais_proximo(lista, valor):
     return min(range(len(lista)), key=lambda i: abs(lista[i] - valor))
+
 
 FCK_MIN = float(round(df_tracos["fck"].min()))
 FCK_MAX = float(round(df_tracos["fck"].max()))
@@ -111,6 +116,41 @@ FCK_MAX = float(round(df_tracos["fck"].max()))
 ME_CIMENTO_REF = 3100.0
 ME_AREIA_REF = 2630.0
 ME_BRITA_REF = 2750.0
+
+# -----------------------------------------------------------------------------
+# CORREÇÃO PELO MÓDULO DE FINURA DA AREIA
+# -----------------------------------------------------------------------------
+# A coluna "Módulo de finura" das abas de traço da planilha é um "% de brita a
+# subtrair", em função do módulo de finura da areia E do diâmetro máximo da
+# brita (aba "MÓDULO DE FINURA DA AREIA" de tabelas completas.xlsx).
+# O consumo de brita de dados_tracos.csv já vem corrigido no módulo de finura
+# de referência 1,8 (foi assim que a tabela ABCP foi montada). Para trabalhar
+# com outro módulo de finura, a correção embutida é desfeita e reaplicada com o
+# valor escolhido, preservando a proporção areia/brita por volume definida pelo
+# teor de argamassa.
+MF_REF = 1.8
+
+
+def coluna_mf_para_dmax(dmax):
+    """Coluna da tabela de módulo de finura correspondente ao Dmax escolhido."""
+    chave = float(dmax)
+    if abs(chave - 25.0) < 1e-9:
+        return "dmax_25"
+    if abs(chave - 19.0) < 1e-9:
+        return "dmax_19"
+    if abs(chave - 12.5) < 1e-9:
+        return "dmax_12_5"
+    return "dmax_9_5"
+
+
+def percentual_brita_a_subtrair(modulo_finura, dmax):
+    """% de brita a subtrair (coluna M da planilha) para o MF e o Dmax dados."""
+    coluna = coluna_mf_para_dmax(dmax)
+    linha = df_mf[df_mf["modulo_finura"].round(2) == round(float(modulo_finura), 2)]
+    if linha.empty:
+        linha = df_mf.iloc[[indice_mais_proximo(lista_modulo_finura, float(modulo_finura))]]
+    return float(linha.iloc[0][coluna])
+
 
 # -----------------------------------------------------------------------------
 # CONTROLES DA BARRA LATERAL (ENTRADAS DO USUÁRIO)
@@ -126,6 +166,15 @@ st.sidebar.divider()
 st.sidebar.subheader("Abatimento/Dmax")
 slump_escolhido = st.sidebar.number_input("Abatimento / Slump (mm)", min_value=70, max_value=140, value=100, step=10)
 dmax_escolhido = st.sidebar.selectbox("Diâmetro máximo da brita (mm)", options=lista_dmax, index=min(2, len(lista_dmax) - 1))
+
+st.sidebar.divider()
+st.sidebar.subheader("Módulo de Finura da Areia")
+mf_areia_escolhido = st.sidebar.selectbox(
+    "Módulo de Finura da Areia",
+    options=lista_modulo_finura,
+    index=indice_mais_proximo(lista_modulo_finura, MF_REF),
+    help="Corrige o consumo de brita (e, por consequência, o de areia) mantendo o teor de argamassa escolhido. O teor de argamassa continua sendo sempre um número inteiro.",
+)
 
 st.sidebar.divider()
 st.sidebar.subheader("Teor de Argamassa")
@@ -181,23 +230,58 @@ me_cimento_sel = st.sidebar.selectbox(
     "Massa Específica Cimento (kg/m³)", options=lista_me_cimento,
     index=indice_mais_proximo(lista_me_cimento, 3100)
 )
-me_areia_sel = st.sidebar.selectbox(
-    "Massa Específica Areia (kg/m³)", options=lista_me_areia,
+
+st.sidebar.markdown("**Areia**")
+me_areia_a_sel = st.sidebar.selectbox(
+    "Massa Específica Areia A (kg/m³)", options=lista_me_areia,
     index=indice_mais_proximo(lista_me_areia, 2630)
 )
-me_brita_sel = st.sidebar.selectbox(
-    "Massa Específica Brita (kg/m³)", options=lista_me_brita,
-    index=indice_mais_proximo(lista_me_brita, 2750)
+me_areia_b_sel = st.sidebar.selectbox(
+    "Massa Específica Areia B (kg/m³)", options=lista_me_areia,
+    index=indice_mais_proximo(lista_me_areia, 2630)
 )
-mu_areia_sel = st.sidebar.selectbox(
-    "Massa Unitária Areia (kg/m³)", options=lista_mu_areia,
+mu_areia_a_sel = st.sidebar.selectbox(
+    "Massa Unitária Areia A (kg/m³)", options=lista_mu_areia,
     index=indice_mais_proximo(lista_mu_areia, 1650)
 )
-mu_brita_sel = st.sidebar.selectbox(
-    "Massa Unitária Brita (kg/m³)", options=lista_mu_brita,
+mu_areia_b_sel = st.sidebar.selectbox(
+    "Massa Unitária Areia B (kg/m³)", options=lista_mu_areia,
+    index=indice_mais_proximo(lista_mu_areia, 1650)
+)
+
+st.sidebar.markdown("**Brita**")
+me_brita_a_sel = st.sidebar.selectbox(
+    "Massa Específica Brita A (kg/m³)", options=lista_me_brita,
+    index=indice_mais_proximo(lista_me_brita, 2750)
+)
+me_brita_b_sel = st.sidebar.selectbox(
+    "Massa Específica Brita B (kg/m³)", options=lista_me_brita,
+    index=indice_mais_proximo(lista_me_brita, 2750)
+)
+me_brita_c_sel = st.sidebar.selectbox(
+    "Massa Específica Brita C (kg/m³)", options=lista_me_brita,
+    index=indice_mais_proximo(lista_me_brita, 2750)
+)
+mu_brita_a_sel = st.sidebar.selectbox(
+    "Massa Unitária Brita A (kg/m³)", options=lista_mu_brita,
     index=indice_mais_proximo(lista_mu_brita, 1700)
 )
+mu_brita_b_sel = st.sidebar.selectbox(
+    "Massa Unitária Brita B (kg/m³)", options=lista_mu_brita,
+    index=indice_mais_proximo(lista_mu_brita, 1700)
+)
+mu_brita_c_sel = st.sidebar.selectbox(
+    "Massa Unitária Brita C (kg/m³)", options=lista_mu_brita,
+    index=indice_mais_proximo(lista_mu_brita, 1700)
+)
+
 me_aditivo_sel = st.sidebar.selectbox("Massa Específica Aditivo (kg/m³)", options=lista_me_aditivo, index=20)
+
+# Massas específicas ponderadas pela divisão escolhida de areia e brita. É a
+# média que representa, para o traço como um todo, o material efetivamente
+# usado em cada fração.
+me_areia_ponderada = (p_areia_a * me_areia_a_sel + p_areia_b * me_areia_b_sel) / 100.0
+me_brita_ponderada = (p_brita_a * me_brita_a_sel + p_brita_b * me_brita_b_sel + p_brita_c * me_brita_c_sel) / 100.0
 
 # -----------------------------------------------------------------------------
 # PAINEL CENTRAL DE RESULTADOS
@@ -239,20 +323,33 @@ def buscar_e_calcular_traco(tipo_cimento):
     linha = linha.iloc[0]
 
     # Dados da tabela cruzada, na massa específica de referência usada para
-    # montá-la (já corretos por fcj e por tipo de cimento)
+    # montá-la (já corretos por fcj, por tipo de cimento e pelo módulo de
+    # finura de referência, MF_REF)
     ac = linha["ac"]
     cc_tabela = linha["consumo_cimento"]
     ca_inicial = linha["agua"]
-    brita_total_seca_tabela = linha["consumo_brita"]
-    areia_total_seca_tabela = linha["consumo_areia"]
+    brita_total_seca_mf_ref = linha["consumo_brita"]
+    areia_total_seca_mf_ref = linha["consumo_areia"]
     teor_argamassa_tabela = int(round(linha["teor_argamassa"]))
+
+    # --- Correção pelo Módulo de Finura da Areia -----------------------------
+    # A tabela já traz a brita corrigida em MF_REF; desfaz essa correção e
+    # reaplica com o módulo de finura escolhido. A areia acompanha a mesma
+    # proporção, de modo que a relação areia/brita do teor de argamassa é
+    # preservada.
+    pct_ref = percentual_brita_a_subtrair(MF_REF, dmax_ajustado)
+    pct_sel = percentual_brita_a_subtrair(mf_areia_escolhido, dmax_ajustado)
+    fator_mf = (1.0 - pct_sel / 100.0) / (1.0 - pct_ref / 100.0)
+
+    brita_total_seca_tabela = brita_total_seca_mf_ref * fator_mf
+    areia_total_seca_tabela = areia_total_seca_mf_ref * fator_mf
 
     # Corrige os consumos para as massas específicas reais informadas na
     # barra lateral, mantendo os volumes (e portanto o traço/proporções) da
     # tabela ABCP: massa_nova = massa_tabela * (massa_especifica_real / massa_especifica_referencia)
     cc = cc_tabela * (me_cimento_sel / ME_CIMENTO_REF)
-    brita_total_seca = brita_total_seca_tabela * (me_brita_sel / ME_BRITA_REF)
-    areia_total_seca = areia_total_seca_tabela * (me_areia_sel / ME_AREIA_REF)
+    brita_total_seca = brita_total_seca_tabela * (me_brita_ponderada / ME_BRITA_REF)
+    areia_total_seca = areia_total_seca_tabela * (me_areia_ponderada / ME_AREIA_REF)
     c_adit = cc * 0.007
 
     # Ajuste de Umidade na Massa da Areia e Desconto na Água Efetiva
@@ -283,11 +380,11 @@ def buscar_e_calcular_traco(tipo_cimento):
     fator_inchamento = 1.0 + (inchamento_areia / 100.0)
     massa_saco = 50 * qtd_sacos  # kg de cimento totais a partir da qtde de sacos escolhida
 
-    vol_areia_a = ((traco_unit["Areia A"] * massa_saco) * fator_inchamento) / (mu_areia_sel / 1000) if ca_a > 0 else 0
-    vol_areia_b = ((traco_unit["Areia B"] * massa_saco) * fator_inchamento) / (mu_areia_sel / 1000) if ca_b > 0 else 0
-    vol_brita_a = (traco_unit["Brita A"] * massa_saco) / (mu_brita_sel / 1000) if cb_a > 0 else 0
-    vol_brita_b = (traco_unit["Brita B"] * massa_saco) / (mu_brita_sel / 1000) if cb_b > 0 else 0
-    vol_brita_c = (traco_unit["Brita C"] * massa_saco) / (mu_brita_sel / 1000) if cb_c > 0 else 0
+    vol_areia_a = ((traco_unit["Areia A"] * massa_saco) * fator_inchamento) / (mu_areia_a_sel / 1000) if ca_a > 0 else 0
+    vol_areia_b = ((traco_unit["Areia B"] * massa_saco) * fator_inchamento) / (mu_areia_b_sel / 1000) if ca_b > 0 else 0
+    vol_brita_a = (traco_unit["Brita A"] * massa_saco) / (mu_brita_a_sel / 1000) if cb_a > 0 else 0
+    vol_brita_b = (traco_unit["Brita B"] * massa_saco) / (mu_brita_b_sel / 1000) if cb_b > 0 else 0
+    vol_brita_c = (traco_unit["Brita C"] * massa_saco) / (mu_brita_c_sel / 1000) if cb_c > 0 else 0
     vol_agua = max(0.0, traco_unit["Água"] * massa_saco)
     vol_aditivo = (traco_unit["Aditivo"] * massa_saco) / me_aditivo_sel
 
@@ -295,6 +392,7 @@ def buscar_e_calcular_traco(tipo_cimento):
         "ac": ac, "ca": ca_ajustada, "cc": cc, "c_adit": c_adit, "peso_total": peso_total,
         "ca_a": ca_a, "ca_b": ca_b, "cb_a": cb_a, "cb_b": cb_b, "cb_c": cb_c, "fcj_proximo": fcj_proximo,
         "teor_argamassa": teor_argamassa_tabela,
+        "pct_brita_subtrair": pct_sel,
         "unitario": traco_unit,
         "obra_litros": {
             "Areia A": vol_areia_a, "Areia B": vol_areia_b,
