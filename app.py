@@ -65,7 +65,6 @@ with col_logo:
         st.image("logo.jpg", width=140)
 with col_titulo:
     st.title("Elaborador para Traços de Concreto")
-    st.caption("Laboratorio 47")
     st.write("Escolha os parâmetros na barra lateral esquerda.")
 
 st.divider()
@@ -150,6 +149,39 @@ def percentual_brita_a_subtrair(modulo_finura, dmax):
     if linha.empty:
         linha = df_mf.iloc[[indice_mais_proximo(lista_modulo_finura, float(modulo_finura))]]
     return float(linha.iloc[0][coluna])
+
+
+# -----------------------------------------------------------------------------
+# CÓDIGO DO TRAÇO
+# -----------------------------------------------------------------------------
+# Numeração sequencial de 5 dígitos para o traço completo. Cada combinação
+# recebe um código próprio, mesmo quando a resistência se repete: mudar o
+# módulo de finura (ou qualquer outro parâmetro) gera um novo código.
+# São 2 cimentos x 7 fcj x 8 abatimentos x 4 Dmax x 16 teores x 10 módulos de
+# finura = 71680 traços, numerados de 00001 a 71680.
+LISTA_CIMENTOS = ["CP II 32", "CP II 40"]
+LISTA_FCJ = sorted(df_tracos["fcj"].unique().tolist())
+LISTA_SLUMP = sorted(df_tracos["slump"].unique().tolist())
+TOTAL_CODIGOS = (
+    len(LISTA_CIMENTOS) * len(LISTA_FCJ) * len(LISTA_SLUMP)
+    * len(lista_dmax) * len(lista_teor_argamassa) * len(lista_modulo_finura)
+)
+
+
+def codigo_do_traco(cimento, fcj, slump, dmax, teor, modulo_finura):
+    """Código do traço completo, na ordem cimento > fcj > abatimento >
+    Dmax > teor de argamassa > módulo de finura."""
+    indices = [
+        (LISTA_CIMENTOS, cimento), (LISTA_FCJ, fcj), (LISTA_SLUMP, slump),
+        (lista_dmax, dmax), (lista_teor_argamassa, teor), (lista_modulo_finura, modulo_finura),
+    ]
+    numero = 0
+    for lista, valor in indices:
+        # Busca exata: cada chave vem dos próprios dados, e um valor de outra
+        # categoria não pode cair no vizinho mais próximo da lista.
+        posicao = lista.index(valor) if valor in lista else indice_mais_proximo(lista, valor)
+        numero = numero * len(lista) + posicao
+    return f"{numero + 1:05d}"
 
 
 # -----------------------------------------------------------------------------
@@ -393,6 +425,10 @@ def buscar_e_calcular_traco(tipo_cimento):
         "ca_a": ca_a, "ca_b": ca_b, "cb_a": cb_a, "cb_b": cb_b, "cb_c": cb_c, "fcj_proximo": fcj_proximo,
         "teor_argamassa": teor_argamassa_tabela,
         "pct_brita_subtrair": pct_sel,
+        "codigo": codigo_do_traco(
+            tipo_cimento, fcj_proximo, slump_ajustado, dmax_ajustado,
+            teor_argamassa_tabela, mf_areia_escolhido,
+        ),
         "unitario": traco_unit,
         "obra_litros": {
             "Areia A": vol_areia_a, "Areia B": vol_areia_b,
@@ -404,6 +440,12 @@ def buscar_e_calcular_traco(tipo_cimento):
 
 res_32 = buscar_e_calcular_traco("CP II 32")
 res_40 = buscar_e_calcular_traco("CP II 40")
+
+# Código do traço completo. A resistência é a mesma nos dois cimentos, então a
+# referência exibida no topo é a do cimento CP II-32, seguida do total de
+# traços do banco (71680).
+st.markdown(f"**Código do Traço {res_32['codigo']}**")
+st.caption("Referente ao Cimento CP II-32 · Código do CP II-40: " + res_40["codigo"])
 
 if erro_brita:
     st.error("Ajuste a divisão das Britas na barra lateral: a soma de Brita A + B não pode superar 100%.")
