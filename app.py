@@ -105,6 +105,10 @@ def indice_mais_proximo(lista, valor):
     return min(range(len(lista)), key=lambda i: abs(lista[i] - valor))
 
 
+# Valor com que o app abre o teor de argamassa
+TEOR_ARGAMASSA_PADRAO = 52
+
+
 FCK_MIN = float(round(df_tracos["fck"].min()))
 FCK_MAX = float(round(df_tracos["fck"].max()))
 
@@ -213,7 +217,7 @@ st.sidebar.subheader("Teor de Argamassa")
 teor_escolhido = st.sidebar.selectbox(
     "Teor de Argamassa (%)",
     options=lista_teor_argamassa,
-    index=len(lista_teor_argamassa) - 1,
+    index=indice_mais_proximo(lista_teor_argamassa, TEOR_ARGAMASSA_PADRAO),
     help="Define a proporção de argamassa usada na busca do traço. Valores sempre inteiros (45% a 60%).",
 )
 
