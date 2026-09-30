@@ -441,12 +441,6 @@ def buscar_e_calcular_traco(tipo_cimento):
 res_32 = buscar_e_calcular_traco("CP II 32")
 res_40 = buscar_e_calcular_traco("CP II 40")
 
-# Código do traço completo. A resistência é a mesma nos dois cimentos, então a
-# referência exibida no topo é a do cimento CP II-32, seguida do total de
-# traços do banco (71680).
-st.markdown(f"**Código do Traço {res_32['codigo']}**")
-st.caption("Referente ao Cimento CP II-32 · Código do CP II-40: " + res_40["codigo"])
-
 if erro_brita:
     st.error("Ajuste a divisão das Britas na barra lateral: a soma de Brita A + B não pode superar 100%.")
 else:
@@ -455,7 +449,11 @@ else:
 
     with col_m32:
         with st.container(border=True):
-            st.subheader("Cimento CP II-32")
+            col_nome_32, col_cod_32 = st.columns([3, 2])
+            with col_nome_32:
+                st.subheader("Cimento CP II-32")
+            with col_cod_32:
+                st.subheader(f"Cod. {res_32['codigo']}")
             st.caption(f"fcj {res_32['fcj_proximo']:.1f} MPa")
             df_32_massa = pd.DataFrame({
                 "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
@@ -476,7 +474,11 @@ else:
 
     with col_m40:
         with st.container(border=True):
-            st.subheader("Cimento CP II-40")
+            col_nome_40, col_cod_40 = st.columns([3, 2])
+            with col_nome_40:
+                st.subheader("Cimento CP II-40")
+            with col_cod_40:
+                st.subheader(f"Cod. {res_40['codigo']}")
             st.caption(f"fcj {res_40['fcj_proximo']:.1f} MPa")
             df_40_massa = pd.DataFrame({
                 "Material": ["Cimento", "Areia A", "Areia B", "Brita A", "Brita B", "Brita C", "Água", "Aditivo"],
