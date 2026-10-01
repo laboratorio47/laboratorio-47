@@ -35,7 +35,7 @@ st.markdown(
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     }
 
-    /* Métricas com leve realce em forma de cartão */
+    /* Métricas com leve realce em forma de card */
     div[data-testid="stMetric"] {
         background-color: #F8F9FA;
         border: 1px solid #E0E0E0;
@@ -86,11 +86,12 @@ def carregar_dados():
 
 df_tracos, df_massas, df_umid, df_sacos, df_mf = carregar_dados()
 
-lista_mu_areia = df_massas["mu_areia"].dropna().tolist()
-lista_me_brita = df_massas["me_brita"].dropna().tolist()
-lista_mu_brita = df_massas["mu_brita"].dropna().tolist()
-lista_me_areia = df_massas["me_areia"].dropna().tolist()
-lista_me_cimento = df_massas["me_cimento"].dropna().tolist()
+# As massas da tabela são sempre números inteiros (kg/m³)
+lista_mu_areia = df_massas["mu_areia"].dropna().astype(int).tolist()
+lista_me_brita = df_massas["me_brita"].dropna().astype(int).tolist()
+lista_mu_brita = df_massas["mu_brita"].dropna().astype(int).tolist()
+lista_me_areia = df_massas["me_areia"].dropna().astype(int).tolist()
+lista_me_cimento = df_massas["me_cimento"].dropna().astype(int).tolist()
 lista_umidade = df_umid["umidade"].dropna().tolist()
 lista_inchamento = df_umid["inchamento"].dropna().tolist()
 lista_sacos = df_sacos["sacos"].dropna().astype(int).tolist()
@@ -98,7 +99,6 @@ lista_dmax = sorted(df_tracos["dmax"].unique().tolist())
 lista_teor_argamassa = sorted(df_tracos["teor_argamassa"].unique().tolist())
 lista_modulo_finura = df_mf["modulo_finura"].dropna().tolist()
 
-lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]  # sem tabela própria enviada
 
 
 def indice_mais_proximo(lista, valor):
@@ -209,7 +209,6 @@ mf_areia_escolhido = st.sidebar.selectbox(
     "Módulo de Finura da Areia",
     options=lista_modulo_finura,
     index=indice_mais_proximo(lista_modulo_finura, MF_REF),
-    help="Corrige o consumo de brita (e, por consequência, o de areia) mantendo o teor de argamassa escolhido. O teor de argamassa continua sendo sempre um número inteiro.",
 )
 
 st.sidebar.divider()
@@ -218,7 +217,6 @@ teor_escolhido = st.sidebar.selectbox(
     "Teor de Argamassa (%)",
     options=lista_teor_argamassa,
     index=indice_mais_proximo(lista_teor_argamassa, TEOR_ARGAMASSA_PADRAO),
-    help="Define a proporção de argamassa usada na busca do traço. Valores sempre inteiros (45% a 60%).",
 )
 
 st.sidebar.divider()
@@ -311,6 +309,7 @@ mu_brita_c_sel = st.sidebar.selectbox(
     index=indice_mais_proximo(lista_mu_brita, 1700)
 )
 
+lista_me_aditivo = [round(x * 0.01, 2) for x in range(90, 141)]  # sem tabela própria enviada
 me_aditivo_sel = st.sidebar.selectbox("Massa Específica Aditivo (kg/m³)", options=lista_me_aditivo, index=20)
 
 # Massas específicas ponderadas pela divisão escolhida de areia e brita. É a
